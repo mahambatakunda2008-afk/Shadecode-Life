@@ -102,8 +102,10 @@ private fun LifeShell() {
                             description = "Develop this capability through repeated, observable evidence.",
                             targetSkillId = skill.id,
                             milestones = listOf(
-                                GoalMilestone("${skill.id}_start", "Collect first evidence", 1),
-                                GoalMilestone("${skill.id}_practice", "Collect repeated evidence", 3)
+                                GoalMilestone("${skill.id}_foundation", "Collect first evidence", 1),
+                                GoalMilestone("${skill.id}_functional", "Reach functional evidence", 3),
+                                GoalMilestone("${skill.id}_reliable", "Build reliable evidence", 5),
+                                GoalMilestone("${skill.id}_demonstrated", "Demonstrate the capability", 8)
                             )
                         )
                     }
