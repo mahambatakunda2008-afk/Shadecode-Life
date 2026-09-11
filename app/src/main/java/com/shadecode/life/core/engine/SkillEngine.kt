@@ -8,18 +8,22 @@ import com.shadecode.life.core.model.SkillStage
 import com.shadecode.life.core.model.SkillStatus
 import java.time.ZoneOffset
 
-/** Turns observed evidence into progressive, prerequisite-aware skill state. */
+/** Turns evaluated evidence into progressive, prerequisite-aware skill state. */
 object SkillEngine {
     fun progress(evidence: List<Evidence>): List<SkillProgress> =
         SkillCatalog.all.map { skill ->
             val skillEvidence = evidenceFor(skill, evidence)
+            val weightedEvidence = EvidenceEvaluator
+                .assessAll(skillEvidence, InstantProvider.now())
+                .sumOf { it.impact }
             val prerequisitesMet = skill.prerequisites.all { prerequisiteId ->
                 stageFor(SkillCatalog.all.firstOrNull { it.id == prerequisiteId }, evidence) >= SkillStage.FUNCTIONAL
             }
-            val stage = stageFor(skill, skillEvidence, prerequisitesMet)
+            val stage = stageFor(skill, skillEvidence, weightedEvidence, prerequisitesMet)
             SkillProgress(
                 skill = skill,
                 evidenceCount = skillEvidence.size,
+                weightedEvidence = weightedEvidence,
                 distinctEvidenceDays = distinctDays(skillEvidence),
                 stage = stage,
                 status = statusFor(stage, prerequisitesMet),
@@ -31,27 +35,35 @@ object SkillEngine {
         progress(evidence)
             .filter { it.status != SkillStatus.DEMONSTRATED && it.prerequisitesMet }
             .minWithOrNull(
-                compareBy<SkillProgress>({ stageRank(it.stage) }, { it.evidenceCount }, { foundationRank(it.skill) })
+                compareBy<SkillProgress>({ stageRank(it.stage) }, { it.weightedEvidence }, { foundationRank(it.skill) })
             )
             ?.skill
 
     fun stageFor(skill: Skill?, evidence: List<Evidence>): SkillStage {
         if (skill == null) return SkillStage.FOUNDATION
         val skillEvidence = evidenceFor(skill, evidence)
+        val weightedEvidence = EvidenceEvaluator
+            .assessAll(skillEvidence, InstantProvider.now())
+            .sumOf { it.impact }
         val prerequisitesMet = skill.prerequisites.all { prerequisiteId ->
             stageFor(SkillCatalog.all.firstOrNull { it.id == prerequisiteId }, evidence) >= SkillStage.FUNCTIONAL
         }
-        return stageFor(skill, skillEvidence, prerequisitesMet)
+        return stageFor(skill, skillEvidence, weightedEvidence, prerequisitesMet)
     }
 
-    private fun stageFor(skill: Skill, evidence: List<Evidence>, prerequisitesMet: Boolean = true): SkillStage {
+    private fun stageFor(
+        skill: Skill,
+        evidence: List<Evidence>,
+        weightedEvidence: Double,
+        prerequisitesMet: Boolean = true
+    ): SkillStage {
         val thresholds = skill.stageThresholds
         val days = distinctDays(evidence)
         val rawStage = when {
-            evidence.size >= thresholds.getOrElse(3) { 8 } && days >= 4 -> SkillStage.DEMONSTRATED
-            evidence.size >= thresholds.getOrElse(2) { 5 } && days >= 3 -> SkillStage.RELIABLE
-            evidence.size >= thresholds.getOrElse(1) { 3 } && days >= 2 -> SkillStage.FUNCTIONAL
-            evidence.size >= thresholds.getOrElse(0) { 1 } -> SkillStage.DEVELOPING
+            weightedEvidence >= thresholds.getOrElse(3) { 8 } && days >= 4 -> SkillStage.DEMONSTRATED
+            weightedEvidence >= thresholds.getOrElse(2) { 5 } && days >= 3 -> SkillStage.RELIABLE
+            weightedEvidence >= thresholds.getOrElse(1) { 3 } && days >= 2 -> SkillStage.FUNCTIONAL
+            weightedEvidence >= thresholds.getOrElse(0) { 1 } -> SkillStage.DEVELOPING
             else -> SkillStage.FOUNDATION
         }
         return if (rawStage == SkillStage.DEMONSTRATED && !prerequisitesMet) SkillStage.RELIABLE else rawStage
@@ -78,4 +90,9 @@ object SkillEngine {
     }
 
     private fun foundationRank(skill: Skill): Int = SkillCatalog.all.indexOf(skill)
+}
+
+/** Small indirection keeps evaluation deterministic in tests without coupling the engine to UI time. */
+private object InstantProvider {
+    fun now() = java.time.Instant.now()
 }
