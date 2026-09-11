@@ -53,7 +53,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun LifeShell() {
     val session = remember { DevelopmentSession() }
-    val store = remember { LocalStateStore(androidx.compose.ui.platform.LocalContext.current.applicationContext) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val store = remember(context) { LocalStateStore(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var restored by remember { mutableStateOf(false) }
     val page = remember { mutableStateOf(Page.WELCOME) }
@@ -69,10 +70,8 @@ private fun LifeShell() {
         }
     }
 
-    LaunchedEffect(Unit) {
-        runCatching {
-            store.read()
-        }.getOrNull()?.let { saved ->
+    LaunchedEffect(store) {
+        runCatching { store.read() }.getOrNull()?.let { saved ->
             session.replaceState(
                 savedEvidence = LocalStateCodec.decodeRecords(saved.records),
                 savedEvents = LocalStateCodec.decodeHistory(saved.history)
@@ -87,10 +86,11 @@ private fun LifeShell() {
     }
 
     when (page.value) {
-        Page.WELCOME -> WelcomeScreen {
+        Page.WELCOME -> WelcomeScreen { page.value = Page.BASELINE }
+        Page.BASELINE -> BaselineScreen(session) {
+            persist()
             page.value = Page.START
         }
-        Page.BASELINE -> BaselineScreen(session) { page.value = Page.START }
         Page.START -> {
             val states = session.states()
             val dailyPlan = DailyPlanner.create(states)
