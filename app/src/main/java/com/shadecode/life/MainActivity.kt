@@ -35,6 +35,7 @@ import com.shadecode.life.core.engine.SkillEngine
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentGoal
 import com.shadecode.life.core.model.GoalMilestone
+import com.shadecode.life.core.model.SkillCatalog
 import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.core.storage.LocalStateCodec
 import com.shadecode.life.core.storage.LocalStateStore
@@ -72,6 +73,16 @@ private fun LifeShell() {
             store.write(
                 records = LocalStateCodec.encodeRecords(session.evidence()),
                 history = LocalStateCodec.encodeHistory(session.events())
+            )
+        }
+    }
+
+    fun persistGoal(goal: DevelopmentGoal?) {
+        scope.launch {
+            store.write(
+                records = LocalStateCodec.encodeRecords(session.evidence()),
+                history = LocalStateCodec.encodeHistory(session.events()),
+                goal = goal?.targetSkillId.orEmpty()
             )
         }
     }
@@ -121,6 +132,11 @@ private fun LifeShell() {
             val evidence = LocalStateCodec.decodeRecords(saved.records)
             val history = LocalStateCodec.decodeHistory(saved.history)
             session.replaceState(savedEvidence = evidence, savedEvents = history)
+            saved.goal.takeIf { it.isNotBlank() }?.let { targetSkillId ->
+                SkillCatalog.all.firstOrNull { it.id == targetSkillId }?.let { skill ->
+                    activeGoal.value = buildGoal(skill.id, skill.title, skill.domain)
+                }
+            }
             if (evidence.isNotEmpty()) page.value = Page.START
         }
         restored = true
@@ -184,19 +200,9 @@ private fun LifeShell() {
                 nextSkill = nextProgress,
                 onCreateGoal = {
                     nextSkill?.let { skill ->
-                        activeGoal.value = DevelopmentGoal(
-                            id = "goal_${skill.id}",
-                            title = "Build ${skill.title.lowercase()}",
-                            domain = skill.domain,
-                            description = "Develop this capability through repeated, observable evidence.",
-                            targetSkillId = skill.id,
-                            milestones = listOf(
-                                GoalMilestone("${skill.id}_foundation", "Collect first evidence", 1),
-                                GoalMilestone("${skill.id}_functional", "Reach functional evidence", 3),
-                                GoalMilestone("${skill.id}_reliable", "Build reliable evidence", 5),
-                                GoalMilestone("${skill.id}_demonstrated", "Demonstrate the capability", 8)
-                            )
-                        )
+                        val goal = buildGoal(skill.id, skill.title, skill.domain)
+                        activeGoal.value = goal
+                        persistGoal(goal)
                     }
                 },
                 onBack = { page.value = Page.START }
@@ -234,6 +240,21 @@ private fun LifeShell() {
         )
     }
 }
+
+private fun buildGoal(skillId: String, skillTitle: String, domain: com.shadecode.life.core.model.DevelopmentDomain): DevelopmentGoal =
+    DevelopmentGoal(
+        id = "goal_$skillId",
+        title = "Build ${skillTitle.lowercase()}",
+        domain = domain,
+        description = "Develop this capability through repeated, observable evidence.",
+        targetSkillId = skillId,
+        milestones = listOf(
+            GoalMilestone("${skillId}_foundation", "Collect first evidence", 1),
+            GoalMilestone("${skillId}_functional", "Reach functional evidence", 3),
+            GoalMilestone("${skillId}_reliable", "Build reliable evidence", 5),
+            GoalMilestone("${skillId}_demonstrated", "Demonstrate the capability", 8)
+        )
+    )
 
 private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE, GOALS, COACH }
 
