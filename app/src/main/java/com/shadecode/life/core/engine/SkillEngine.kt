@@ -10,7 +10,9 @@ import com.shadecode.life.core.model.SkillStatus
 object SkillEngine {
     fun progress(evidence: List<Evidence>): List<SkillProgress> =
         SkillCatalog.all.map { skill ->
-            val count = evidence.count { it.domain == skill.domain }
+            val count = evidence.count { item ->
+                item.skillId == skill.id || (item.skillId == null && item.domain == skill.domain)
+            }
             SkillProgress(
                 skill = skill,
                 evidenceCount = count,
