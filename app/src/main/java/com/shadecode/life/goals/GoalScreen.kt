@@ -69,13 +69,13 @@ fun GoalScreen(
                     Text(progress.skill.title, style = MaterialTheme.typography.titleLarge)
                     Text(progress.skill.description)
                     Text("Stage: ${stageLabel(progress.stage)}")
-                    Text("${progress.evidenceCount} evidence point${if (progress.evidenceCount == 1) "" else "s"} • ${statusLabel(progress.status)}")
-                    if (progress.skill.prerequisites.isNotEmpty()) {
-                        Text(
-                            if (progress.prerequisitesMet) "Prerequisites met" else "Prerequisites still developing",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
+                    Text("Evidence: ${progress.evidenceCount} point${if (progress.evidenceCount == 1) "" else "s"} across ${progress.distinctEvidenceDays} day${if (progress.distinctEvidenceDays == 1) "" else "s"}")
+                    Text(
+                        if (progress.prerequisitesMet) "Prerequisites: ready"
+                        else "Prerequisites: still developing",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(statusLabel(progress.status), style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -90,9 +90,8 @@ private fun stageLabel(stage: SkillStage): String = when (stage) {
     SkillStage.DEMONSTRATED -> "Demonstrated"
 }
 
-private fun statusLabel(status: SkillStatus): String =
-    when (status) {
-        SkillStatus.NOT_STARTED -> "Not started"
-        SkillStatus.IN_PROGRESS -> "In progress"
-        SkillStatus.DEMONSTRATED -> "Demonstrated"
-    }
+private fun statusLabel(status: SkillStatus): String = when (status) {
+    SkillStatus.NOT_STARTED -> "Not started"
+    SkillStatus.IN_PROGRESS -> "In progress"
+    SkillStatus.DEMONSTRATED -> "Demonstrated"
+}
