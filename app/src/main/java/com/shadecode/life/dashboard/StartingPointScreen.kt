@@ -28,6 +28,7 @@ fun StartingPointScreen(
     onViewHistory: () -> Unit,
     onViewGoals: () -> Unit,
     onViewCoach: () -> Unit,
+    onViewDevelopmentMap: () -> Unit = {},
     onExport: () -> Unit = {},
     onReset: () -> Unit = {}
 ) {
@@ -64,6 +65,9 @@ fun StartingPointScreen(
         Text("Development map", style = MaterialTheme.typography.titleLarge)
         states.forEach { state -> DomainStateCard(state) }
 
+        Button(onClick = onViewDevelopmentMap, modifier = Modifier.fillMaxWidth()) {
+            Text("Open development map")
+        }
         Button(onClick = onViewCoach, modifier = Modifier.fillMaxWidth()) { Text("Ask your coach") }
         Button(onClick = onViewGoals, modifier = Modifier.fillMaxWidth()) { Text("Goals & skills") }
         Button(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) { Text("View development history") }
