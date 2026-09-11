@@ -57,12 +57,9 @@ private fun LifeShell() {
                 onStartAction = {
                     activeAction.value = it
                     page.value = Page.ACTION
-                }
+                },
+                onViewHistory = { page.value = Page.TIMELINE }
             )
-            Button(
-                onClick = { page.value = Page.TIMELINE },
-                modifier = Modifier.padding(24.dp)
-            ) { androidx.compose.material3.Text("View development history") }
         }
         Page.ACTION -> activeAction.value?.let { action ->
             ActionScreen(
