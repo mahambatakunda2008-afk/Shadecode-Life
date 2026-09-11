@@ -24,7 +24,8 @@ fun StartingPointScreen(
     nextFocus: DevelopmentState?,
     nextAction: DevelopmentAction?,
     dailyPlan: DailyPlan?,
-    onStartAction: (DevelopmentAction) -> Unit
+    onStartAction: (DevelopmentAction) -> Unit,
+    onViewHistory: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -68,6 +69,13 @@ fun StartingPointScreen(
 
         states.forEach { state ->
             DomainStateCard(state)
+        }
+
+        Button(
+            onClick = onViewHistory,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("View development history")
         }
     }
 }
