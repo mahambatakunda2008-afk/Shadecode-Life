@@ -24,6 +24,7 @@ class BaselineSession(
             id = UUID.randomUUID().toString(),
             domain = item.domain,
             title = item.title,
+            skillId = item.skillId,
             value = item.unit?.let { answer.toDoubleOrNull() },
             unit = item.unit,
             note = if (item.unit == null) answer else null,
