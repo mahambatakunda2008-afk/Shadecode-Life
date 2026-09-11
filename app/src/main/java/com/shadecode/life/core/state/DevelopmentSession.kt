@@ -30,6 +30,7 @@ class DevelopmentSession {
             id = "action_${action.id}_${evidence.size}",
             domain = action.domain,
             title = action.title,
+            skillId = action.skillId,
             note = detail
         )
         events += DevelopmentEvent(
