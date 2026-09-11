@@ -11,5 +11,15 @@ data class Evidence(
     val value: Double? = null,
     val unit: String? = null,
     val note: String? = null,
+    val kind: EvidenceKind = EvidenceKind.OBSERVATION,
     val recordedAt: Instant = Instant.now()
 )
+
+enum class EvidenceKind {
+    MEASUREMENT,
+    COMPLETED_TASK,
+    ARTIFACT,
+    COMMUNICATION,
+    REFLECTION,
+    OBSERVATION
+}
