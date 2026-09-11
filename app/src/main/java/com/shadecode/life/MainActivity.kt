@@ -11,8 +11,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,10 +31,13 @@ import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentGoal
 import com.shadecode.life.core.model.GoalMilestone
 import com.shadecode.life.core.state.DevelopmentSession
+import com.shadecode.life.core.storage.LocalStateCodec
+import com.shadecode.life.core.storage.LocalStateStore
 import com.shadecode.life.dashboard.StartingPointScreen
 import com.shadecode.life.goals.GoalScreen
 import com.shadecode.life.timeline.DevelopmentTimelineScreen
 import com.shadecode.life.ui.theme.ShadecodeLifeTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,12 +53,43 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun LifeShell() {
     val session = remember { DevelopmentSession() }
+    val store = remember { LocalStateStore(androidx.compose.ui.platform.LocalContext.current.applicationContext) }
+    val scope = rememberCoroutineScope()
+    var restored by remember { mutableStateOf(false) }
     val page = remember { mutableStateOf(Page.WELCOME) }
     val activeAction = remember { mutableStateOf<DevelopmentAction?>(null) }
     val activeGoal = remember { mutableStateOf<DevelopmentGoal?>(null) }
 
+    fun persist() {
+        scope.launch {
+            store.write(
+                records = LocalStateCodec.encodeRecords(session.evidence()),
+                history = LocalStateCodec.encodeHistory(session.events())
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        runCatching {
+            store.read()
+        }.getOrNull()?.let { saved ->
+            session.replaceState(
+                savedEvidence = LocalStateCodec.decodeRecords(saved.records),
+                savedEvents = LocalStateCodec.decodeHistory(saved.history)
+            )
+        }
+        restored = true
+    }
+
+    if (!restored) {
+        WelcomeScreen(onBegin = {})
+        return
+    }
+
     when (page.value) {
-        Page.WELCOME -> WelcomeScreen { page.value = Page.BASELINE }
+        Page.WELCOME -> WelcomeScreen {
+            page.value = Page.START
+        }
         Page.BASELINE -> BaselineScreen(session) { page.value = Page.START }
         Page.START -> {
             val states = session.states()
@@ -75,6 +113,7 @@ private fun LifeShell() {
                 action = action,
                 onComplete = { reflection ->
                     session.recordAction(action, reflection)
+                    persist()
                     activeAction.value = null
                     page.value = Page.START
                 },
