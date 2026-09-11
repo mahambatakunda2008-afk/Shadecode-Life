@@ -25,7 +25,8 @@ fun StartingPointScreen(
     nextAction: DevelopmentAction?,
     dailyPlan: DailyPlan?,
     onStartAction: (DevelopmentAction) -> Unit,
-    onViewHistory: () -> Unit
+    onViewHistory: () -> Unit,
+    onViewGoals: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -71,10 +72,11 @@ fun StartingPointScreen(
             DomainStateCard(state)
         }
 
-        Button(
-            onClick = onViewHistory,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Button(onClick = onViewGoals, modifier = Modifier.fillMaxWidth()) {
+            Text("Goals & skills")
+        }
+
+        Button(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) {
             Text("View development history")
         }
     }
