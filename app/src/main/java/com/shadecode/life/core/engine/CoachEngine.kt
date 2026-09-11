@@ -9,6 +9,7 @@ import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.model.Priority
 import com.shadecode.life.core.model.SkillProgress
 import com.shadecode.life.core.model.SkillStatus
+import com.shadecode.life.core.model.Trend
 
 object CoachEngine {
     fun generateInsight(
@@ -17,14 +18,17 @@ object CoachEngine {
         skillProgress: List<SkillProgress>
     ): CoachInsight {
         val nextSkill = skillProgress
-            .filter { it.status != SkillStatus.DEMONSTRATED }
-            .minWithOrNull(compareBy<SkillProgress>({ statusRank(it.status) }, { it.evidenceCount }))
+            .filter { it.status != SkillStatus.DEMONSTRATED && it.prerequisitesMet }
+            .minWithOrNull(compareBy<SkillProgress>({ stageRank(it.stage) }, { it.evidenceCount }, { foundationRank(it.skill.domain) }))
 
         val decliningState = states
-            .filter { it.evidenceCount > 0 && it.trend == com.shadecode.life.core.model.Trend.DECLINING }
+            .filter { it.evidenceCount > 0 && it.trend == Trend.DECLINING }
             .minByOrNull { it.confidence }
 
         if (decliningState != null) {
+            val skill = skillProgress
+                .filter { it.skill.domain == decliningState.domain && it.prerequisitesMet }
+                .minByOrNull { it.evidenceCount }
             val action = DevelopmentAction(
                 id = "coach_stabilize_${decliningState.domain.name.lowercase()}",
                 domain = decliningState.domain,
@@ -32,14 +36,14 @@ object CoachEngine {
                 reason = "Recent evidence suggests this area is declining. Stabilizing it comes before adding another goal.",
                 estimatedMinutes = 15,
                 kind = ActionKind.PRACTICE,
-                skillId = skillProgress.firstOrNull { it.skill.domain == decliningState.domain }?.skill?.id
+                skillId = skill?.skill?.id
             )
             return CoachInsight(
                 title = "Catch the decline",
                 message = "Your ${decliningState.domain.title.lowercase()} is trending down.",
                 reason = "The local trend engine found a meaningful decline across the available numeric evidence.",
                 action = action,
-                skill = skillProgress.firstOrNull { it.skill.domain == decliningState.domain },
+                skill = skill,
                 priority = Priority.HIGH,
                 evidenceSummary = "Known: ${decliningState.evidenceCount} ${decliningState.domain.title.lowercase()} evidence item(s). Trend: declining."
             )
@@ -50,7 +54,7 @@ object CoachEngine {
             .minByOrNull { foundationRank(it.domain) }
 
         if (unknownState != null) {
-            val skill = skillProgress.firstOrNull { it.skill.domain == unknownState.domain }
+            val skill = skillProgress.firstOrNull { it.skill.domain == unknownState.domain && it.prerequisitesMet }
             val action = DevelopmentAction(
                 id = "coach_measure_${unknownState.domain.name.lowercase()}",
                 domain = unknownState.domain,
@@ -65,7 +69,7 @@ object CoachEngine {
                 message = "Your next move is to measure ${unknownState.domain.title.lowercase()}.",
                 reason = "This area has no recorded evidence, so a confident improvement decision would be guesswork.",
                 action = action,
-                skill = nextSkill,
+                skill = skill ?: nextSkill,
                 priority = Priority.HIGH,
                 evidenceSummary = "Known: ${evidence.size} evidence item(s). Unknown: ${unknownState.domain.title}."
             )
@@ -89,7 +93,7 @@ object CoachEngine {
             return CoachInsight(
                 title = "Build the capability",
                 message = "${nextSkill.skill.title} $statusText. Create another piece of evidence.",
-                reason = "The model currently has ${nextSkill.evidenceCount} evidence item(s) for this skill.",
+                reason = "The model currently has ${nextSkill.evidenceCount} evidence item(s) for this skill at the ${stageLabel(nextSkill)} stage.",
                 action = action,
                 skill = nextSkill,
                 priority = if (nextSkill.status == SkillStatus.NOT_STARTED) Priority.HIGH else Priority.MEDIUM,
@@ -108,10 +112,14 @@ object CoachEngine {
         )
     }
 
-    private fun statusRank(status: SkillStatus): Int = when (status) {
-        SkillStatus.NOT_STARTED -> 0
-        SkillStatus.IN_PROGRESS -> 1
-        SkillStatus.DEMONSTRATED -> 2
+    private fun stageLabel(progress: SkillProgress): String = progress.stage.name.lowercase()
+
+    private fun stageRank(stage: com.shadecode.life.core.model.SkillStage): Int = when (stage) {
+        com.shadecode.life.core.model.SkillStage.FOUNDATION -> 0
+        com.shadecode.life.core.model.SkillStage.DEVELOPING -> 1
+        com.shadecode.life.core.model.SkillStage.FUNCTIONAL -> 2
+        com.shadecode.life.core.model.SkillStage.RELIABLE -> 3
+        com.shadecode.life.core.model.SkillStage.DEMONSTRATED -> 4
     }
 
     private fun foundationRank(domain: DevelopmentDomain): Int = when (domain) {
