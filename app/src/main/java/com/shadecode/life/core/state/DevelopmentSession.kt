@@ -19,26 +19,30 @@ class DevelopmentSession {
                 title = item.title,
                 domain = item.domain,
                 type = EventType.BASELINE,
-                detail = item.note ?: item.value?.let { "$it ${item.unit.orEmpty()}" } ?: "Evidence recorded."
+                detail = item.note ?: item.value?.let { "$it ${item.unit.orEmpty()}" } ?: "Evidence recorded.",
+                occurredAt = item.recordedAt
             )
         }
     }
 
     fun recordAction(action: DevelopmentAction, reflection: String) {
         val detail = reflection.ifBlank { "Action completed." }
+        val occurredAt = java.time.Instant.now()
         evidence += Evidence(
             id = "action_${action.id}_${evidence.size}",
             domain = action.domain,
             title = action.title,
             skillId = action.skillId,
-            note = detail
+            note = detail,
+            recordedAt = occurredAt
         )
         events += DevelopmentEvent(
             id = "action_${action.id}_${events.size}",
             title = action.title,
             domain = action.domain,
             type = EventType.ACTION_COMPLETED,
-            detail = detail
+            detail = detail,
+            occurredAt = occurredAt
         )
         if (reflection.isNotBlank()) {
             events += DevelopmentEvent(
@@ -46,16 +50,21 @@ class DevelopmentSession {
                 title = "Reflection",
                 domain = action.domain,
                 type = EventType.REFLECTION,
-                detail = reflection
+                detail = reflection,
+                occurredAt = occurredAt
             )
         }
     }
 
+    fun replaceState(savedEvidence: List<Evidence>, savedEvents: List<DevelopmentEvent>) {
+        evidence.clear()
+        evidence += savedEvidence
+        events.clear()
+        events += savedEvents
+    }
+
     fun evidence(): List<Evidence> = evidence.toList()
-
     fun events(): List<DevelopmentEvent> = events.sortedByDescending { it.occurredAt }
-
     fun states(): List<DevelopmentState> = DevelopmentEngine.buildStates(evidence)
-
     fun nextFocus(): DevelopmentState? = DevelopmentEngine.chooseNextFocus(states())
 }
