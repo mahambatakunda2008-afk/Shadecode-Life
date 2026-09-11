@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.action.ActionScreen
 import com.shadecode.life.assessment.BaselineScreen
+import com.shadecode.life.coach.CoachScreen
+import com.shadecode.life.core.engine.CoachEngine
 import com.shadecode.life.core.engine.DailyPlanner
 import com.shadecode.life.core.engine.DevelopmentEngine
 import com.shadecode.life.core.engine.SkillEngine
@@ -64,7 +66,8 @@ private fun LifeShell() {
                     page.value = Page.ACTION
                 },
                 onViewHistory = { page.value = Page.TIMELINE },
-                onViewGoals = { page.value = Page.GOALS }
+                onViewGoals = { page.value = Page.GOALS },
+                onViewCoach = { page.value = Page.COACH }
             )
         }
         Page.ACTION -> activeAction.value?.let { action ->
@@ -107,10 +110,25 @@ private fun LifeShell() {
                 }
             )
         }
+        Page.COACH -> {
+            val states = session.states()
+            val progress = SkillEngine.progress(session.evidence())
+            val insight = CoachEngine.generateInsight(session.evidence(), states, progress)
+            CoachScreen(
+                insight = insight,
+                onTakeAction = {
+                    insight.action?.let {
+                        activeAction.value = it
+                        page.value = Page.ACTION
+                    }
+                },
+                onBack = { page.value = Page.START }
+            )
+        }
     }
 }
 
-private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE, GOALS }
+private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE, GOALS, COACH }
 
 @Composable
 private fun WelcomeScreen(onBegin: () -> Unit) {
