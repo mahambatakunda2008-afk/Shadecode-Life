@@ -19,7 +19,7 @@ object DevelopmentEngine {
                 domain = domain,
                 evidenceCount = domainEvidence.size,
                 confidence = confidence(domainEvidence.size),
-                trend = Trend.UNKNOWN
+                trend = TrendEngine.trendFor(domainEvidence)
             )
         }
 
@@ -27,7 +27,9 @@ object DevelopmentEngine {
         states
             .filter { it.evidenceCount == 0 }
             .minByOrNull { foundationOrder(it.domain) }
-            ?: states.minByOrNull { it.confidence }
+            ?: states.minWithOrNull(
+                compareBy<DevelopmentState>({ trendPriority(it.trend) }, { it.confidence }, { foundationOrder(it.domain) })
+            )
 
     fun recommendNextAction(states: List<DevelopmentState>): DevelopmentAction? {
         val focus = chooseNextFocus(states) ?: return null
@@ -41,15 +43,34 @@ object DevelopmentEngine {
                 kind = ActionKind.MEASURE
             )
         } else {
+            val title = when (focus.trend) {
+                Trend.DECLINING -> "Stabilize your ${focus.domain.title.lowercase()}"
+                Trend.IMPROVING -> "Strengthen your ${focus.domain.title.lowercase()}"
+                else -> "Take one deliberate step in ${focus.domain.title.lowercase()}"
+            }
             DevelopmentAction(
                 id = "practice_${focus.domain.name.lowercase()}",
                 domain = focus.domain,
-                title = "Take one deliberate step in ${focus.domain.title.lowercase()}",
-                reason = "This area has the least evidence confidence, so improving it is the current highest-leverage move.",
+                title = title,
+                reason = reasonFor(focus),
                 estimatedMinutes = 15,
                 kind = ActionKind.PRACTICE
             )
         }
+    }
+
+    private fun reasonFor(state: DevelopmentState): String = when (state.trend) {
+        Trend.DECLINING -> "Recent evidence suggests this area is slipping. Stabilizing it takes priority over adding another goal."
+        Trend.IMPROVING -> "Recent evidence is improving. A deliberate next step can turn that momentum into a repeatable capability."
+        Trend.STABLE -> "Recent evidence is stable. A focused practice step can test whether the capability can move beyond its current level."
+        Trend.UNKNOWN -> "This area has the least evidence confidence, so another useful observation is the current highest-leverage move."
+    }
+
+    private fun trendPriority(trend: Trend): Int = when (trend) {
+        Trend.DECLINING -> 0
+        Trend.UNKNOWN -> 1
+        Trend.STABLE -> 2
+        Trend.IMPROVING -> 3
     }
 
     private fun confidence(evidenceCount: Int): Double =
