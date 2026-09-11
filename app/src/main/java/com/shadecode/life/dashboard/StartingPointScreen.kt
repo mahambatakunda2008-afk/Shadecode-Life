@@ -14,9 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.shadecode.life.core.engine.DevelopmentDecisionEngine
 import com.shadecode.life.core.model.DailyPlan
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentState
+import com.shadecode.life.core.model.Evidence
 
 @Composable
 fun StartingPointScreen(
@@ -24,6 +26,7 @@ fun StartingPointScreen(
     nextFocus: DevelopmentState?,
     nextAction: DevelopmentAction?,
     dailyPlan: DailyPlan?,
+    evidence: List<Evidence> = emptyList(),
     onStartAction: (DevelopmentAction) -> Unit,
     onViewHistory: () -> Unit,
     onViewGoals: () -> Unit,
@@ -32,6 +35,8 @@ fun StartingPointScreen(
     onExport: () -> Unit = {},
     onReset: () -> Unit = {}
 ) {
+    val decision = DevelopmentDecisionEngine.next(evidence)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,6 +49,7 @@ fun StartingPointScreen(
             style = MaterialTheme.typography.bodyLarge
         )
 
+        decision?.let { NextCapabilityCard(it) }
         dailyPlan?.let { plan -> DailyFocusCard(plan) { onStartAction(plan.action) } }
         nextAction?.let { action -> WhatNextCard(action, onStartAction) }
 
@@ -79,6 +85,22 @@ fun StartingPointScreen(
 }
 
 @Composable
+private fun NextCapabilityCard(decision: DevelopmentDecisionEngine.Decision) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Highest-leverage next capability", style = MaterialTheme.typography.labelLarge)
+            Text(decision.skill.title, style = MaterialTheme.typography.headlineSmall)
+            Text(decision.skill.description, style = MaterialTheme.typography.bodyLarge)
+            Text(decision.reason, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "${stageLabel(decision.progress.stage)} · ${decision.progress.evidenceCount} evidence item${if (decision.progress.evidenceCount == 1) "" else "s"}",
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+    }
+}
+
+@Composable
 private fun WhatNextCard(action: DevelopmentAction, onStartAction: (DevelopmentAction) -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -105,4 +127,12 @@ private fun DomainStateCard(state: DevelopmentState) {
             )
         }
     }
+}
+
+private fun stageLabel(stage: com.shadecode.life.core.model.SkillStage): String = when (stage) {
+    com.shadecode.life.core.model.SkillStage.FOUNDATION -> "Foundation"
+    com.shadecode.life.core.model.SkillStage.DEVELOPING -> "Developing"
+    com.shadecode.life.core.model.SkillStage.FUNCTIONAL -> "Functional"
+    com.shadecode.life.core.model.SkillStage.RELIABLE -> "Reliable"
+    com.shadecode.life.core.model.SkillStage.DEMONSTRATED -> "Demonstrated"
 }
