@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.core.model.BaselineCatalog
 import com.shadecode.life.core.model.BaselineItem
-import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.state.DevelopmentSession
 
 @Composable
@@ -40,6 +39,7 @@ fun BaselineScreen(
     var index by remember { mutableIntStateOf(0) }
     var response by remember { mutableStateOf("") }
     var completed by remember { mutableStateOf(false) }
+    var showingResult by remember { mutableStateOf(false) }
     var lastResult by remember { mutableStateOf<AssessmentResult?>(null) }
 
     if (completed) {
@@ -62,46 +62,56 @@ fun BaselineScreen(
         LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
         Text("${index + 1} of ${items.size}", style = MaterialTheme.typography.labelLarge)
 
-        BaselineCard(item = item, response = response, onResponseChange = { response = it })
-
-        lastResult?.let { result ->
-            AssessmentResultCard(result)
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (index > 0) {
-                OutlinedButton(
+        if (showingResult) {
+            lastResult?.let { result ->
+                AssessmentResultCard(result)
+                Button(
                     onClick = {
-                        index -= 1
-                        response = baseline.answerFor(items[index].id)
-                        lastResult = null
+                        if (index == items.lastIndex) {
+                            session.addEvidence(baseline.evidence())
+                            completed = true
+                        } else {
+                            index += 1
+                            response = baseline.answerFor(items[index].id)
+                            showingResult = false
+                            lastResult = null
+                        }
                     },
-                    modifier = Modifier.weight(1f)
-                ) { Text("Back") }
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (index == items.lastIndex) "Finish baseline" else "Continue")
+                }
             }
+        } else {
+            BaselineCard(item = item, response = response, onResponseChange = { response = it })
 
-            Button(
-                onClick = {
-                    baseline.record(item, response)
-                    val evidence = baseline.evidence().firstOrNull { it.title == item.title }
-                    if (evidence != null) {
-                        lastResult = AssessmentInterpreter.interpret(item, evidence)
-                    }
-                    if (index == items.lastIndex) {
-                        session.addEvidence(baseline.evidence())
-                        completed = true
-                    } else {
-                        index += 1
-                        response = baseline.answerFor(items[index].id)
-                    }
-                },
-                enabled = response.isNotBlank(),
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(if (index == items.lastIndex) "Finish baseline" else "Record result")
+                if (index > 0) {
+                    OutlinedButton(
+                        onClick = {
+                            index -= 1
+                            response = baseline.answerFor(items[index].id)
+                            lastResult = null
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Back") }
+                }
+
+                Button(
+                    onClick = {
+                        baseline.record(item, response)
+                        val evidence = baseline.evidenceFor(item.id)
+                        if (evidence != null) {
+                            lastResult = AssessmentInterpreter.interpret(item, evidence)
+                            showingResult = true
+                        }
+                    },
+                    enabled = response.isNotBlank(),
+                    modifier = Modifier.weight(1f)
+                ) { Text("Record result") }
             }
         }
     }
