@@ -19,6 +19,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.action.ActionScreen
 import com.shadecode.life.assessment.BaselineScreen
@@ -53,7 +54,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun LifeShell() {
     val session = remember { DevelopmentSession() }
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val store = remember(context) { LocalStateStore(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var restored by remember { mutableStateOf(false) }
@@ -72,10 +73,10 @@ private fun LifeShell() {
 
     LaunchedEffect(store) {
         runCatching { store.read() }.getOrNull()?.let { saved ->
-            session.replaceState(
-                savedEvidence = LocalStateCodec.decodeRecords(saved.records),
-                savedEvents = LocalStateCodec.decodeHistory(saved.history)
-            )
+            val evidence = LocalStateCodec.decodeRecords(saved.records)
+            val history = LocalStateCodec.decodeHistory(saved.history)
+            session.replaceState(savedEvidence = evidence, savedEvents = history)
+            if (evidence.isNotEmpty()) page.value = Page.START
         }
         restored = true
     }
@@ -123,7 +124,10 @@ private fun LifeShell() {
                 }
             )
         }
-        Page.TIMELINE -> DevelopmentTimelineScreen(session.events())
+        Page.TIMELINE -> DevelopmentTimelineScreen(
+            events = session.events(),
+            onBack = { page.value = Page.START }
+        )
         Page.GOALS -> {
             val progress = SkillEngine.progress(session.evidence())
             val nextSkill = SkillEngine.nextSkill(session.evidence())
@@ -148,7 +152,8 @@ private fun LifeShell() {
                             )
                         )
                     }
-                }
+                },
+                onBack = { page.value = Page.START }
             )
         }
         Page.COACH -> {
