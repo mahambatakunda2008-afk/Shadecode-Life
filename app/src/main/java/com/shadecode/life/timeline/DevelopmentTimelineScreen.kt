@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,7 +19,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun DevelopmentTimelineScreen(events: List<DevelopmentEvent>) {
+fun DevelopmentTimelineScreen(
+    events: List<DevelopmentEvent>,
+    onBack: () -> Unit
+) {
     val formatter = DateTimeFormatter.ofPattern("d MMM, HH:mm")
         .withZone(ZoneId.systemDefault())
 
@@ -34,6 +38,10 @@ fun DevelopmentTimelineScreen(events: List<DevelopmentEvent>) {
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 8.dp)
                 )
+                OutlinedButton(
+                    onClick = onBack,
+                    modifier = Modifier.padding(top = 12.dp)
+                ) { Text("Back") }
             }
         }
 
