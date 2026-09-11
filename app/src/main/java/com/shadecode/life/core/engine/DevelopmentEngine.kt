@@ -5,6 +5,7 @@ import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentDomain
 import com.shadecode.life.core.model.DevelopmentState
 import com.shadecode.life.core.model.Evidence
+import com.shadecode.life.core.model.SkillCatalog
 import com.shadecode.life.core.model.Trend
 
 /**
@@ -33,6 +34,8 @@ object DevelopmentEngine {
 
     fun recommendNextAction(states: List<DevelopmentState>): DevelopmentAction? {
         val focus = chooseNextFocus(states) ?: return null
+        val skillId = SkillCatalog.all.firstOrNull { it.domain == focus.domain }?.id
+
         return if (focus.evidenceCount == 0) {
             DevelopmentAction(
                 id = "measure_${focus.domain.name.lowercase()}",
@@ -40,7 +43,8 @@ object DevelopmentEngine {
                 title = "Measure your ${focus.domain.title.lowercase()}",
                 reason = "We do not have enough evidence yet. A small measurement gives us a better starting point than guessing.",
                 estimatedMinutes = 5,
-                kind = ActionKind.MEASURE
+                kind = ActionKind.MEASURE,
+                skillId = skillId
             )
         } else {
             val title = when (focus.trend) {
@@ -54,7 +58,8 @@ object DevelopmentEngine {
                 title = title,
                 reason = reasonFor(focus),
                 estimatedMinutes = 15,
-                kind = ActionKind.PRACTICE
+                kind = ActionKind.PRACTICE,
+                skillId = skillId
             )
         }
     }
