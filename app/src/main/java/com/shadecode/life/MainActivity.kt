@@ -23,6 +23,7 @@ import com.shadecode.life.core.engine.DevelopmentEngine
 import com.shadecode.life.core.engine.SkillEngine
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentGoal
+import com.shadecode.life.core.model.GoalMilestone
 import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.dashboard.StartingPointScreen
 import com.shadecode.life.goals.GoalScreen
@@ -45,6 +46,7 @@ private fun LifeShell() {
     val session = remember { DevelopmentSession() }
     val page = remember { mutableStateOf(Page.WELCOME) }
     val activeAction = remember { mutableStateOf<DevelopmentAction?>(null) }
+    val activeGoal = remember { mutableStateOf<DevelopmentGoal?>(null) }
 
     when (page.value) {
         Page.WELCOME -> WelcomeScreen { page.value = Page.BASELINE }
@@ -82,10 +84,27 @@ private fun LifeShell() {
         Page.TIMELINE -> DevelopmentTimelineScreen(session.events())
         Page.GOALS -> {
             val progress = SkillEngine.progress(session.evidence())
+            val nextSkill = SkillEngine.nextSkill(session.evidence())
+            val nextProgress = progress.firstOrNull { it.skill.id == nextSkill?.id }
+
             GoalScreen(
-                goal = null,
-                nextSkill = progress.firstOrNull { it.skill.id == SkillEngine.nextSkill(session.evidence())?.id },
-                onCreateGoal = { }
+                goal = activeGoal.value,
+                nextSkill = nextProgress,
+                onCreateGoal = {
+                    nextSkill?.let { skill ->
+                        activeGoal.value = DevelopmentGoal(
+                            id = "goal_${skill.id}",
+                            title = "Build ${skill.title.lowercase()}",
+                            domain = skill.domain,
+                            description = "Develop this capability through repeated, observable evidence.",
+                            targetSkillId = skill.id,
+                            milestones = listOf(
+                                GoalMilestone("${skill.id}_start", "Collect first evidence", 1),
+                                GoalMilestone("${skill.id}_practice", "Collect repeated evidence", 3)
+                            )
+                        )
+                    }
+                }
             )
         }
     }
