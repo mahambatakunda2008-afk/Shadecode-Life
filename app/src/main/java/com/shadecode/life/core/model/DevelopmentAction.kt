@@ -7,7 +7,8 @@ data class DevelopmentAction(
     val title: String,
     val reason: String,
     val estimatedMinutes: Int,
-    val kind: ActionKind
+    val kind: ActionKind,
+    val skillId: String? = null
 )
 
 enum class ActionKind {
