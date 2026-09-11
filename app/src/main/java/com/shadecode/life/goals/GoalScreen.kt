@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.core.model.DevelopmentGoal
 import com.shadecode.life.core.model.SkillProgress
+import com.shadecode.life.core.model.SkillStage
 import com.shadecode.life.core.model.SkillStatus
 
 @Composable
@@ -67,11 +68,26 @@ fun GoalScreen(
                     Text("Next capability", style = MaterialTheme.typography.labelLarge)
                     Text(progress.skill.title, style = MaterialTheme.typography.titleLarge)
                     Text(progress.skill.description)
+                    Text("Stage: ${stageLabel(progress.stage)}")
                     Text("${progress.evidenceCount} evidence point${if (progress.evidenceCount == 1) "" else "s"} • ${statusLabel(progress.status)}")
+                    if (progress.skill.prerequisites.isNotEmpty()) {
+                        Text(
+                            if (progress.prerequisitesMet) "Prerequisites met" else "Prerequisites still developing",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+private fun stageLabel(stage: SkillStage): String = when (stage) {
+    SkillStage.FOUNDATION -> "Foundation"
+    SkillStage.DEVELOPING -> "Developing"
+    SkillStage.FUNCTIONAL -> "Functional"
+    SkillStage.RELIABLE -> "Reliable"
+    SkillStage.DEMONSTRATED -> "Demonstrated"
 }
 
 private fun statusLabel(status: SkillStatus): String =
