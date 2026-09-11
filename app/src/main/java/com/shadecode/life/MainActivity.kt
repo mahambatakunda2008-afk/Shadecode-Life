@@ -12,14 +12,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.assessment.BaselineScreen
+import com.shadecode.life.core.state.DevelopmentSession
+import com.shadecode.life.dashboard.StartingPointScreen
 import com.shadecode.life.ui.theme.ShadecodeLifeTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,9 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ShadecodeLifeTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    LifeShell()
-                }
+                Surface(modifier = Modifier.fillMaxSize()) { LifeShell() }
             }
         }
     }
@@ -37,55 +35,27 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun LifeShell() {
-    var screen by remember { mutableStateOf(Screen.WELCOME) }
+    val session = remember { DevelopmentSession() }
+    val page = remember { mutableStateOf(Page.WELCOME) }
 
-    when (screen) {
-        Screen.WELCOME -> WelcomeScreen(onBegin = { screen = Screen.BASELINE })
-        Screen.BASELINE -> BaselineScreen(onComplete = { screen = Screen.STARTING_POINT })
-        Screen.STARTING_POINT -> StartingPointScreen()
+    when (page.value) {
+        Page.WELCOME -> WelcomeScreen { page.value = Page.BASELINE }
+        Page.BASELINE -> BaselineScreen(session) { page.value = Page.START }
+        Page.START -> StartingPointScreen(session.states(), session.nextFocus())
     }
 }
 
-private enum class Screen {
-    WELCOME,
-    BASELINE,
-    STARTING_POINT
-}
+private enum class Page { WELCOME, BASELINE, START }
 
 @Composable
 private fun WelcomeScreen(onBegin: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text("Shadecode Life", style = MaterialTheme.typography.headlineLarge)
-        Text(
-            "Build yourself deliberately.",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 12.dp, bottom = 24.dp)
-        )
-        Button(onClick = onBegin) {
-            Text("Begin baseline")
-        }
-    }
-}
-
-@Composable
-private fun StartingPointScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Your starting point", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "Baseline evidence is captured. The next layer will turn it into a prioritized development plan.",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 12.dp)
-        )
+        Text("Build yourself deliberately.", modifier = Modifier.padding(top = 12.dp, bottom = 24.dp))
+        Button(onClick = onBegin) { Text("Begin") }
     }
 }
