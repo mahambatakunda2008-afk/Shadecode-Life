@@ -27,12 +27,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.core.model.BaselineCatalog
 import com.shadecode.life.core.model.BaselineItem
+import com.shadecode.life.core.state.DevelopmentSession
 
 @Composable
 fun BaselineScreen(
+    session: DevelopmentSession,
     onComplete: () -> Unit
 ) {
     val items = BaselineCatalog.items
+    val baseline = remember { BaselineSession(items) }
     var index by remember { mutableIntStateOf(0) }
     var response by remember { mutableStateOf("") }
     var completed by remember { mutableStateOf(false) }
@@ -53,10 +56,7 @@ fun BaselineScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("Personal baseline", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "We are collecting evidence, not grading who you are.",
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Text("We are collecting evidence, not grading who you are.", style = MaterialTheme.typography.bodyLarge)
         LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
         Text("${index + 1} of ${items.size}", style = MaterialTheme.typography.labelLarge)
 
@@ -70,21 +70,21 @@ fun BaselineScreen(
                 OutlinedButton(
                     onClick = {
                         index -= 1
-                        response = ""
+                        response = baseline.answerFor(items[index].id)
                     },
                     modifier = Modifier.weight(1f)
-                ) {
-                    Text("Back")
-                }
+                ) { Text("Back") }
             }
 
             Button(
                 onClick = {
+                    baseline.record(item, response)
                     if (index == items.lastIndex) {
+                        session.addEvidence(baseline.evidence())
                         completed = true
                     } else {
                         index += 1
-                        response = ""
+                        response = baseline.answerFor(items[index].id)
                     }
                 },
                 enabled = response.isNotBlank(),
@@ -103,18 +103,11 @@ private fun BaselineCard(
     onResponseChange: (String) -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(item.domain.title, style = MaterialTheme.typography.labelLarge)
             Text(item.title, style = MaterialTheme.typography.titleLarge)
             Text(item.prompt, style = MaterialTheme.typography.bodyLarge)
-
-            item.targetDescription?.let {
-                Text("Look for: $it", style = MaterialTheme.typography.bodyMedium)
-            }
-
+            item.targetDescription?.let { Text("Look for: $it", style = MaterialTheme.typography.bodyMedium) }
             OutlinedTextField(
                 value = response,
                 onValueChange = onResponseChange,
@@ -129,20 +122,16 @@ private fun BaselineCard(
 @Composable
 private fun BaselineComplete(onComplete: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
         Text("Baseline captured", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(12.dp))
         Text(
-            "Your first data points are ready. Next, Shadecode Life can turn them into a development plan and choose a useful first focus.",
+            "Your first data points are ready. Shadecode Life can now use them to choose a useful first focus.",
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onComplete, modifier = Modifier.fillMaxWidth()) {
-            Text("See my starting point")
-        }
+        Button(onClick = onComplete, modifier = Modifier.fillMaxWidth()) { Text("See my starting point") }
     }
 }
