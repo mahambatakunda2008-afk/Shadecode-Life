@@ -7,6 +7,7 @@ data class Evidence(
     val id: String,
     val domain: DevelopmentDomain,
     val title: String,
+    val skillId: String? = null,
     val value: Double? = null,
     val unit: String? = null,
     val note: String? = null,
