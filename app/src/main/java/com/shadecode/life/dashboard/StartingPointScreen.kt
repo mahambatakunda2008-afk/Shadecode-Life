@@ -21,7 +21,8 @@ import com.shadecode.life.core.model.DevelopmentState
 fun StartingPointScreen(
     states: List<DevelopmentState>,
     nextFocus: DevelopmentState?,
-    nextAction: DevelopmentAction?
+    nextAction: DevelopmentAction?,
+    onStartAction: (DevelopmentAction) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -36,7 +37,7 @@ fun StartingPointScreen(
         )
 
         nextAction?.let { action ->
-            WhatNextCard(action)
+            WhatNextCard(action, onStartAction)
         }
 
         nextFocus?.let { focus ->
@@ -66,7 +67,10 @@ fun StartingPointScreen(
 }
 
 @Composable
-private fun WhatNextCard(action: DevelopmentAction) {
+private fun WhatNextCard(
+    action: DevelopmentAction,
+    onStartAction: (DevelopmentAction) -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text("What next?", style = MaterialTheme.typography.labelLarge)
@@ -83,7 +87,7 @@ private fun WhatNextCard(action: DevelopmentAction) {
                 )
             }
             Button(
-                onClick = { },
+                onClick = { onStartAction(action) },
                 modifier = Modifier.padding(top = 12.dp)
             ) {
                 Text("Start")
