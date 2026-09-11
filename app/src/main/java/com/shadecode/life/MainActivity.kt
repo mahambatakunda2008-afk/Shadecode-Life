@@ -1,5 +1,6 @@
 package com.shadecode.life
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,9 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +62,7 @@ private fun LifeShell() {
     val store = remember(context) { LocalStateStore(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var restored by remember { mutableStateOf(false) }
+    var confirmReset by remember { mutableStateOf(false) }
     val page = remember { mutableStateOf(Page.WELCOME) }
     val activeAction = remember { mutableStateOf<DevelopmentAction?>(null) }
     val activeGoal = remember { mutableStateOf<DevelopmentGoal?>(null) }
@@ -69,6 +74,46 @@ private fun LifeShell() {
                 history = LocalStateCodec.encodeHistory(session.events())
             )
         }
+    }
+
+    fun reset() {
+        scope.launch {
+            store.clear()
+            session.replaceState(emptyList(), emptyList())
+            activeAction.value = null
+            activeGoal.value = null
+            page.value = Page.WELCOME
+        }
+    }
+
+    fun export() {
+        val goal = activeGoal.value
+        val evidence = session.evidence()
+        val events = session.events()
+        val body = buildString {
+            appendLine("Shadecode Life development export")
+            appendLine()
+            goal?.let {
+                appendLine("Goal: ${it.title}")
+                appendLine("Domain: ${it.domain.title}")
+                appendLine("Target skill: ${it.targetSkillId}")
+                appendLine()
+            }
+            appendLine("Evidence (${evidence.size})")
+            evidence.forEach { item ->
+                appendLine("- ${item.title} | ${item.domain.title} | ${item.kind.name.lowercase()} | ${item.note.orEmpty()}")
+            }
+            appendLine()
+            appendLine("Development history (${events.size})")
+            events.forEach { event ->
+                appendLine("- ${event.title} | ${event.domain.title} | ${event.type.name.lowercase()} | ${event.detail}")
+            }
+        }
+        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Shadecode Life development export")
+            putExtra(Intent.EXTRA_TEXT, body)
+        }, "Export Shadecode Life"))
     }
 
     LaunchedEffect(store) {
@@ -106,7 +151,9 @@ private fun LifeShell() {
                 },
                 onViewHistory = { page.value = Page.TIMELINE },
                 onViewGoals = { page.value = Page.GOALS },
-                onViewCoach = { page.value = Page.COACH }
+                onViewCoach = { page.value = Page.COACH },
+                onExport = ::export,
+                onReset = { confirmReset = true }
             )
         }
         Page.ACTION -> activeAction.value?.let { action ->
@@ -132,7 +179,6 @@ private fun LifeShell() {
             val progress = SkillEngine.progress(session.evidence())
             val nextSkill = SkillEngine.nextSkill(session.evidence())
             val nextProgress = progress.firstOrNull { it.skill.id == nextSkill?.id }
-
             GoalScreen(
                 goal = activeGoal.value,
                 nextSkill = nextProgress,
@@ -172,6 +218,21 @@ private fun LifeShell() {
             )
         }
     }
+
+    if (confirmReset) {
+        AlertDialog(
+            onDismissRequest = { confirmReset = false },
+            title = { Text("Reset development data?") },
+            text = { Text("This permanently clears your local evidence and development history from this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmReset = false
+                    reset()
+                }) { Text("Reset") }
+            },
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") } }
+        )
+    }
 }
 
 private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE, GOALS, COACH }
@@ -183,8 +244,8 @@ private fun WelcomeScreen(onBegin: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        androidx.compose.material3.Text("Shadecode Life", style = MaterialTheme.typography.headlineLarge)
-        androidx.compose.material3.Text("Build yourself deliberately.", modifier = Modifier.padding(top = 12.dp, bottom = 24.dp))
-        Button(onClick = onBegin) { androidx.compose.material3.Text("Begin") }
+        Text("Shadecode Life", style = MaterialTheme.typography.headlineLarge)
+        Text("Build yourself deliberately.", modifier = Modifier.padding(top = 12.dp, bottom = 24.dp))
+        Button(onClick = onBegin) { Text("Begin") }
     }
 }
