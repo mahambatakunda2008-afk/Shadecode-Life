@@ -17,8 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.shadecode.life.action.ActionScreen
 import com.shadecode.life.assessment.BaselineScreen
 import com.shadecode.life.core.engine.DevelopmentEngine
+import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.dashboard.StartingPointScreen
 import com.shadecode.life.ui.theme.ShadecodeLifeTheme
@@ -38,6 +40,7 @@ class MainActivity : ComponentActivity() {
 private fun LifeShell() {
     val session = remember { DevelopmentSession() }
     val page = remember { mutableStateOf(Page.WELCOME) }
+    val activeAction = remember { mutableStateOf<DevelopmentAction?>(null) }
 
     when (page.value) {
         Page.WELCOME -> WelcomeScreen { page.value = Page.BASELINE }
@@ -45,12 +48,30 @@ private fun LifeShell() {
         Page.START -> StartingPointScreen(
             states = session.states(),
             nextFocus = session.nextFocus(),
-            nextAction = DevelopmentEngine.recommendNextAction(session.states())
+            nextAction = DevelopmentEngine.recommendNextAction(session.states()),
+            onStartAction = {
+                activeAction.value = it
+                page.value = Page.ACTION
+            }
         )
+        Page.ACTION -> activeAction.value?.let { action ->
+            ActionScreen(
+                action = action,
+                onComplete = { reflection ->
+                    session.recordAction(action, reflection)
+                    activeAction.value = null
+                    page.value = Page.START
+                },
+                onCancel = {
+                    activeAction.value = null
+                    page.value = Page.START
+                }
+            )
+        }
     }
 }
 
-private enum class Page { WELCOME, BASELINE, START }
+private enum class Page { WELCOME, BASELINE, START, ACTION }
 
 @Composable
 private fun WelcomeScreen(onBegin: () -> Unit) {
