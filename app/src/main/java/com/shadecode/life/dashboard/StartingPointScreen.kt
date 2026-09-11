@@ -2,11 +2,11 @@ package com.shadecode.life.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -14,17 +14,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentState
 
 @Composable
 fun StartingPointScreen(
     states: List<DevelopmentState>,
-    nextFocus: DevelopmentState?
+    nextFocus: DevelopmentState?,
+    nextAction: DevelopmentAction?
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -34,14 +35,18 @@ fun StartingPointScreen(
             style = MaterialTheme.typography.bodyLarge
         )
 
+        nextAction?.let { action ->
+            WhatNextCard(action)
+        }
+
         nextFocus?.let { focus ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("First focus", style = MaterialTheme.typography.labelLarge)
+                    Text("Current focus", style = MaterialTheme.typography.labelLarge)
                     Text(focus.domain.title, style = MaterialTheme.typography.titleLarge)
                     Text(
                         if (focus.evidenceCount == 0) {
-                            "There is no baseline evidence here yet. Start by measuring it."
+                            "There is no baseline evidence here yet."
                         } else {
                             "This area currently has the least confidence in your model."
                         },
@@ -56,6 +61,33 @@ fun StartingPointScreen(
 
         states.forEach { state ->
             DomainStateCard(state)
+        }
+    }
+}
+
+@Composable
+private fun WhatNextCard(action: DevelopmentAction) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text("What next?", style = MaterialTheme.typography.labelLarge)
+            Text(action.title, style = MaterialTheme.typography.titleLarge)
+            Text(
+                action.reason,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Row(modifier = Modifier.padding(top = 16.dp)) {
+                Text(
+                    "${action.estimatedMinutes} min • ${action.domain.title}",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            Button(
+                onClick = { },
+                modifier = Modifier.padding(top = 12.dp)
+            ) {
+                Text("Start")
+            }
         }
     }
 }
