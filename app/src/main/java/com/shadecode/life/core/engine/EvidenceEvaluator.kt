@@ -22,7 +22,7 @@ object EvidenceEvaluator {
 
     fun assess(target: Evidence, allEvidence: List<Evidence>, now: Instant = Instant.now()): EvidenceAssessment {
         val skillSpecific = !target.skillId.isNullOrBlank() && SkillCatalog.all.any { it.id == target.skillId }
-        val sameDomain = allEvidence.count { it.domain == target.domain } > 1
+        val sameDomain = allEvidence.any { it.domain == target.domain }
         val sameSkill = target.skillId?.let { id -> allEvidence.count { it.skillId == id } } ?: 0
 
         val relevance = when {
