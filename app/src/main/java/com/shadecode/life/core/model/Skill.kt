@@ -13,6 +13,7 @@ data class Skill(
 data class SkillProgress(
     val skill: Skill,
     val evidenceCount: Int,
+    val weightedEvidence: Double,
     val distinctEvidenceDays: Int,
     val stage: SkillStage,
     val status: SkillStatus,
