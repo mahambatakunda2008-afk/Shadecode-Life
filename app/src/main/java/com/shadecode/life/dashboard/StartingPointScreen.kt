@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.shadecode.life.core.model.DailyPlan
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentState
 
@@ -22,6 +23,7 @@ fun StartingPointScreen(
     states: List<DevelopmentState>,
     nextFocus: DevelopmentState?,
     nextAction: DevelopmentAction?,
+    dailyPlan: DailyPlan?,
     onStartAction: (DevelopmentAction) -> Unit
 ) {
     Column(
@@ -35,6 +37,10 @@ fun StartingPointScreen(
             "This is not a score for your worth. It is a map of what we know, what we do not know yet, and where to collect useful evidence next.",
             style = MaterialTheme.typography.bodyLarge
         )
+
+        dailyPlan?.let { plan ->
+            DailyFocusCard(plan) { onStartAction(plan.action) }
+        }
 
         nextAction?.let { action ->
             WhatNextCard(action, onStartAction)
@@ -75,21 +81,11 @@ private fun WhatNextCard(
         Column(modifier = Modifier.padding(20.dp)) {
             Text("What next?", style = MaterialTheme.typography.labelLarge)
             Text(action.title, style = MaterialTheme.typography.titleLarge)
-            Text(
-                action.reason,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            Text(action.reason, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
             Row(modifier = Modifier.padding(top = 16.dp)) {
-                Text(
-                    "${action.estimatedMinutes} min • ${action.domain.title}",
-                    style = MaterialTheme.typography.labelMedium
-                )
+                Text("${action.estimatedMinutes} min • ${action.domain.title}", style = MaterialTheme.typography.labelMedium)
             }
-            Button(
-                onClick = { onStartAction(action) },
-                modifier = Modifier.padding(top = 12.dp)
-            ) {
+            Button(onClick = { onStartAction(action) }, modifier = Modifier.padding(top = 12.dp)) {
                 Text("Start")
             }
         }
@@ -101,15 +97,10 @@ private fun DomainStateCard(state: DevelopmentState) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(state.domain.title, style = MaterialTheme.typography.titleMedium)
-            Text(
-                "${state.evidenceCount} evidence point${if (state.evidenceCount == 1) "" else "s"}",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text("${state.evidenceCount} evidence point${if (state.evidenceCount == 1) "" else "s"}", style = MaterialTheme.typography.bodyMedium)
             LinearProgressIndicator(
                 progress = { state.confidence.toFloat() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
             )
         }
     }
