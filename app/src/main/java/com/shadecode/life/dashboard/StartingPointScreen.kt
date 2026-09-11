@@ -27,7 +27,9 @@ fun StartingPointScreen(
     onStartAction: (DevelopmentAction) -> Unit,
     onViewHistory: () -> Unit,
     onViewGoals: () -> Unit,
-    onViewCoach: () -> Unit
+    onViewCoach: () -> Unit,
+    onExport: () -> Unit,
+    onReset: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -65,6 +67,10 @@ fun StartingPointScreen(
         Button(onClick = onViewCoach, modifier = Modifier.fillMaxWidth()) { Text("Ask your coach") }
         Button(onClick = onViewGoals, modifier = Modifier.fillMaxWidth()) { Text("Goals & skills") }
         Button(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) { Text("View development history") }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = onExport, modifier = Modifier.weight(1f)) { Text("Export") }
+            Button(onClick = onReset, modifier = Modifier.weight(1f)) { Text("Reset") }
+        }
     }
 }
 
