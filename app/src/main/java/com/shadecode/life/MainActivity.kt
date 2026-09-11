@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +23,7 @@ import com.shadecode.life.core.engine.DevelopmentEngine
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.dashboard.StartingPointScreen
+import com.shadecode.life.timeline.DevelopmentTimelineScreen
 import com.shadecode.life.ui.theme.ShadecodeLifeTheme
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +59,10 @@ private fun LifeShell() {
                     page.value = Page.ACTION
                 }
             )
+            Button(
+                onClick = { page.value = Page.TIMELINE },
+                modifier = Modifier.padding(24.dp)
+            ) { androidx.compose.material3.Text("View development history") }
         }
         Page.ACTION -> activeAction.value?.let { action ->
             ActionScreen(
@@ -74,10 +78,11 @@ private fun LifeShell() {
                 }
             )
         }
+        Page.TIMELINE -> DevelopmentTimelineScreen(session.events())
     }
 }
 
-private enum class Page { WELCOME, BASELINE, START, ACTION }
+private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE }
 
 @Composable
 private fun WelcomeScreen(onBegin: () -> Unit) {
@@ -86,8 +91,8 @@ private fun WelcomeScreen(onBegin: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Shadecode Life", style = MaterialTheme.typography.headlineLarge)
-        Text("Build yourself deliberately.", modifier = Modifier.padding(top = 12.dp, bottom = 24.dp))
-        Button(onClick = onBegin) { Text("Begin") }
+        androidx.compose.material3.Text("Shadecode Life", style = MaterialTheme.typography.headlineLarge)
+        androidx.compose.material3.Text("Build yourself deliberately.", modifier = Modifier.padding(top = 12.dp, bottom = 24.dp))
+        Button(onClick = onBegin) { androidx.compose.material3.Text("Begin") }
     }
 }
