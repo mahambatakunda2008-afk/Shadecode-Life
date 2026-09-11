@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.action.ActionScreen
 import com.shadecode.life.assessment.BaselineScreen
+import com.shadecode.life.core.engine.DailyPlanner
 import com.shadecode.life.core.engine.DevelopmentEngine
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.state.DevelopmentSession
@@ -45,15 +46,20 @@ private fun LifeShell() {
     when (page.value) {
         Page.WELCOME -> WelcomeScreen { page.value = Page.BASELINE }
         Page.BASELINE -> BaselineScreen(session) { page.value = Page.START }
-        Page.START -> StartingPointScreen(
-            states = session.states(),
-            nextFocus = session.nextFocus(),
-            nextAction = DevelopmentEngine.recommendNextAction(session.states()),
-            onStartAction = {
-                activeAction.value = it
-                page.value = Page.ACTION
-            }
-        )
+        Page.START -> {
+            val states = session.states()
+            val dailyPlan = DailyPlanner.create(states)
+            StartingPointScreen(
+                states = states,
+                nextFocus = session.nextFocus(),
+                nextAction = DevelopmentEngine.recommendNextAction(states),
+                dailyPlan = dailyPlan,
+                onStartAction = {
+                    activeAction.value = it
+                    page.value = Page.ACTION
+                }
+            )
+        }
         Page.ACTION -> activeAction.value?.let { action ->
             ActionScreen(
                 action = action,
