@@ -20,9 +20,12 @@ import com.shadecode.life.action.ActionScreen
 import com.shadecode.life.assessment.BaselineScreen
 import com.shadecode.life.core.engine.DailyPlanner
 import com.shadecode.life.core.engine.DevelopmentEngine
+import com.shadecode.life.core.engine.SkillEngine
 import com.shadecode.life.core.model.DevelopmentAction
+import com.shadecode.life.core.model.DevelopmentGoal
 import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.dashboard.StartingPointScreen
+import com.shadecode.life.goals.GoalScreen
 import com.shadecode.life.timeline.DevelopmentTimelineScreen
 import com.shadecode.life.ui.theme.ShadecodeLifeTheme
 
@@ -58,7 +61,8 @@ private fun LifeShell() {
                     activeAction.value = it
                     page.value = Page.ACTION
                 },
-                onViewHistory = { page.value = Page.TIMELINE }
+                onViewHistory = { page.value = Page.TIMELINE },
+                onViewGoals = { page.value = Page.GOALS }
             )
         }
         Page.ACTION -> activeAction.value?.let { action ->
@@ -76,10 +80,18 @@ private fun LifeShell() {
             )
         }
         Page.TIMELINE -> DevelopmentTimelineScreen(session.events())
+        Page.GOALS -> {
+            val progress = SkillEngine.progress(session.evidence())
+            GoalScreen(
+                goal = null,
+                nextSkill = progress.firstOrNull { it.skill.id == SkillEngine.nextSkill(session.evidence())?.id },
+                onCreateGoal = { }
+            )
+        }
     }
 }
 
-private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE }
+private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE, GOALS }
 
 @Composable
 private fun WelcomeScreen(onBegin: () -> Unit) {
