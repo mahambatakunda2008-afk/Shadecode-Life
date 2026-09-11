@@ -6,24 +6,23 @@ import com.shadecode.life.core.model.SkillCatalog
 import com.shadecode.life.core.model.SkillProgress
 import com.shadecode.life.core.model.SkillStage
 import com.shadecode.life.core.model.SkillStatus
+import java.time.ZoneOffset
 
 /** Turns observed evidence into progressive, prerequisite-aware skill state. */
 object SkillEngine {
     fun progress(evidence: List<Evidence>): List<SkillProgress> =
         SkillCatalog.all.map { skill ->
-            val count = evidence.count { item ->
-                item.skillId == skill.id || (item.skillId == null && item.domain == skill.domain)
-            }
+            val skillEvidence = evidenceFor(skill, evidence)
             val prerequisitesMet = skill.prerequisites.all { prerequisiteId ->
                 stageFor(
                     SkillCatalog.all.firstOrNull { it.id == prerequisiteId },
                     evidence
                 ) >= SkillStage.FUNCTIONAL
             }
-            val stage = stageFor(skill, evidence, prerequisitesMet)
+            val stage = stageFor(skill, skillEvidence, prerequisitesMet)
             SkillProgress(
                 skill = skill,
-                evidenceCount = count,
+                evidenceCount = skillEvidence.size,
                 stage = stage,
                 status = statusFor(stage, prerequisitesMet),
                 prerequisitesMet = prerequisitesMet
@@ -40,25 +39,21 @@ object SkillEngine {
 
     fun stageFor(skill: Skill?, evidence: List<Evidence>): SkillStage {
         if (skill == null) return SkillStage.FOUNDATION
-        val count = evidence.count { item ->
-            item.skillId == skill.id || (item.skillId == null && item.domain == skill.domain)
-        }
+        val skillEvidence = evidenceFor(skill, evidence)
         val prerequisitesMet = skill.prerequisites.all { prerequisiteId ->
             stageFor(SkillCatalog.all.firstOrNull { it.id == prerequisiteId }, evidence) >= SkillStage.FUNCTIONAL
         }
-        return stageFor(skill, evidence, prerequisitesMet)
+        return stageFor(skill, skillEvidence, prerequisitesMet)
     }
 
     private fun stageFor(skill: Skill, evidence: List<Evidence>, prerequisitesMet: Boolean = true): SkillStage {
-        val count = evidence.count { item ->
-            item.skillId == skill.id || (item.skillId == null && item.domain == skill.domain)
-        }
         val thresholds = skill.stageThresholds
+        val distinctDays = evidence.map { it.recordedAt.atZone(ZoneOffset.UTC).toLocalDate() }.distinct().size
         val rawStage = when {
-            count >= thresholds.getOrElse(3) { 8 } -> SkillStage.DEMONSTRATED
-            count >= thresholds.getOrElse(2) { 5 } -> SkillStage.RELIABLE
-            count >= thresholds.getOrElse(1) { 3 } -> SkillStage.FUNCTIONAL
-            count >= thresholds.getOrElse(0) { 1 } -> SkillStage.DEVELOPING
+            evidence.size >= thresholds.getOrElse(3) { 8 } && distinctDays >= 4 -> SkillStage.DEMONSTRATED
+            evidence.size >= thresholds.getOrElse(2) { 5 } && distinctDays >= 3 -> SkillStage.RELIABLE
+            evidence.size >= thresholds.getOrElse(1) { 3 } && distinctDays >= 2 -> SkillStage.FUNCTIONAL
+            evidence.size >= thresholds.getOrElse(0) { 1 } -> SkillStage.DEVELOPING
             else -> SkillStage.FOUNDATION
         }
         return if (rawStage == SkillStage.DEMONSTRATED && !prerequisitesMet) {
@@ -67,6 +62,11 @@ object SkillEngine {
             rawStage
         }
     }
+
+    private fun evidenceFor(skill: Skill, evidence: List<Evidence>): List<Evidence> =
+        evidence.filter { item ->
+            item.skillId == skill.id || (item.skillId == null && item.domain == skill.domain)
+        }
 
     private fun statusFor(stage: SkillStage, prerequisitesMet: Boolean): SkillStatus = when {
         stage == SkillStage.DEMONSTRATED && prerequisitesMet -> SkillStatus.DEMONSTRATED
