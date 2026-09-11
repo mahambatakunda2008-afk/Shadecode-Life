@@ -26,7 +26,8 @@ fun StartingPointScreen(
     dailyPlan: DailyPlan?,
     onStartAction: (DevelopmentAction) -> Unit,
     onViewHistory: () -> Unit,
-    onViewGoals: () -> Unit
+    onViewGoals: () -> Unit,
+    onViewCoach: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -40,13 +41,8 @@ fun StartingPointScreen(
             style = MaterialTheme.typography.bodyLarge
         )
 
-        dailyPlan?.let { plan ->
-            DailyFocusCard(plan) { onStartAction(plan.action) }
-        }
-
-        nextAction?.let { action ->
-            WhatNextCard(action, onStartAction)
-        }
+        dailyPlan?.let { plan -> DailyFocusCard(plan) { onStartAction(plan.action) } }
+        nextAction?.let { action -> WhatNextCard(action, onStartAction) }
 
         nextFocus?.let { focus ->
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -54,11 +50,8 @@ fun StartingPointScreen(
                     Text("Current focus", style = MaterialTheme.typography.labelLarge)
                     Text(focus.domain.title, style = MaterialTheme.typography.titleLarge)
                     Text(
-                        if (focus.evidenceCount == 0) {
-                            "There is no baseline evidence here yet."
-                        } else {
-                            "This area currently has the least confidence in your model."
-                        },
+                        if (focus.evidenceCount == 0) "There is no baseline evidence here yet."
+                        else "This area currently has the least confidence in your model.",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -67,26 +60,16 @@ fun StartingPointScreen(
         }
 
         Text("Development map", style = MaterialTheme.typography.titleLarge)
+        states.forEach { state -> DomainStateCard(state) }
 
-        states.forEach { state ->
-            DomainStateCard(state)
-        }
-
-        Button(onClick = onViewGoals, modifier = Modifier.fillMaxWidth()) {
-            Text("Goals & skills")
-        }
-
-        Button(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) {
-            Text("View development history")
-        }
+        Button(onClick = onViewCoach, modifier = Modifier.fillMaxWidth()) { Text("Ask your coach") }
+        Button(onClick = onViewGoals, modifier = Modifier.fillMaxWidth()) { Text("Goals & skills") }
+        Button(onClick = onViewHistory, modifier = Modifier.fillMaxWidth()) { Text("View development history") }
     }
 }
 
 @Composable
-private fun WhatNextCard(
-    action: DevelopmentAction,
-    onStartAction: (DevelopmentAction) -> Unit
-) {
+private fun WhatNextCard(action: DevelopmentAction, onStartAction: (DevelopmentAction) -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text("What next?", style = MaterialTheme.typography.labelLarge)
@@ -95,9 +78,7 @@ private fun WhatNextCard(
             Row(modifier = Modifier.padding(top = 16.dp)) {
                 Text("${action.estimatedMinutes} min • ${action.domain.title}", style = MaterialTheme.typography.labelMedium)
             }
-            Button(onClick = { onStartAction(action) }, modifier = Modifier.padding(top = 12.dp)) {
-                Text("Start")
-            }
+            Button(onClick = { onStartAction(action) }, modifier = Modifier.padding(top = 12.dp)) { Text("Start") }
         }
     }
 }
