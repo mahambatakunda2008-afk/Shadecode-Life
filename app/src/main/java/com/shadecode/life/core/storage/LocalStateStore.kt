@@ -23,11 +23,11 @@ class LocalStateStore(private val context: Context) {
         )
     }
 
-    suspend fun write(records: String, history: String, goal: String = "") {
+    suspend fun write(records: String, history: String, goal: String? = null) {
         context.lifeStateStore.edit { values ->
             values[recordsKey] = records
             values[historyKey] = history
-            values[goalKey] = goal
+            if (goal != null) values[goalKey] = goal
         }
     }
 
