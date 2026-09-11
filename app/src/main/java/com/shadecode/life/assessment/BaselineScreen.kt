@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.core.model.BaselineCatalog
 import com.shadecode.life.core.model.BaselineItem
+import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.state.DevelopmentSession
 
 @Composable
@@ -39,6 +40,7 @@ fun BaselineScreen(
     var index by remember { mutableIntStateOf(0) }
     var response by remember { mutableStateOf("") }
     var completed by remember { mutableStateOf(false) }
+    var lastResult by remember { mutableStateOf<AssessmentResult?>(null) }
 
     if (completed) {
         BaselineComplete(onComplete = onComplete)
@@ -62,6 +64,10 @@ fun BaselineScreen(
 
         BaselineCard(item = item, response = response, onResponseChange = { response = it })
 
+        lastResult?.let { result ->
+            AssessmentResultCard(result)
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -71,6 +77,7 @@ fun BaselineScreen(
                     onClick = {
                         index -= 1
                         response = baseline.answerFor(items[index].id)
+                        lastResult = null
                     },
                     modifier = Modifier.weight(1f)
                 ) { Text("Back") }
@@ -79,6 +86,10 @@ fun BaselineScreen(
             Button(
                 onClick = {
                     baseline.record(item, response)
+                    val evidence = baseline.evidence().firstOrNull { it.title == item.title }
+                    if (evidence != null) {
+                        lastResult = AssessmentInterpreter.interpret(item, evidence)
+                    }
                     if (index == items.lastIndex) {
                         session.addEvidence(baseline.evidence())
                         completed = true
@@ -90,7 +101,7 @@ fun BaselineScreen(
                 enabled = response.isNotBlank(),
                 modifier = Modifier.weight(1f)
             ) {
-                Text(if (index == items.lastIndex) "Finish baseline" else "Continue")
+                Text(if (index == items.lastIndex) "Finish baseline" else "Record result")
             }
         }
     }
@@ -115,6 +126,18 @@ private fun BaselineCard(
                 label = { Text(item.unit?.let { "Result ($it)" } ?: "What happened?") },
                 minLines = 3
             )
+        }
+    }
+}
+
+@Composable
+private fun AssessmentResultCard(result: AssessmentResult) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("What this tells us", style = MaterialTheme.typography.titleMedium)
+            Text(result.interpretation)
+            Text("Next useful observation", style = MaterialTheme.typography.titleMedium)
+            Text(result.nextStep)
         }
     }
 }
