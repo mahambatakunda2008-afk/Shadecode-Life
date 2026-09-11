@@ -40,6 +40,7 @@ import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.core.storage.LocalStateCodec
 import com.shadecode.life.core.storage.LocalStateStore
 import com.shadecode.life.dashboard.StartingPointScreen
+import com.shadecode.life.development.DevelopmentMapScreen
 import com.shadecode.life.goals.GoalScreen
 import com.shadecode.life.timeline.DevelopmentTimelineScreen
 import com.shadecode.life.ui.theme.ShadecodeLifeTheme
@@ -168,6 +169,7 @@ private fun LifeShell() {
                 onViewHistory = { page.value = Page.TIMELINE },
                 onViewGoals = { page.value = Page.GOALS },
                 onViewCoach = { page.value = Page.COACH },
+                onViewDevelopmentMap = { page.value = Page.DEVELOPMENT_MAP },
                 onExport = ::export,
                 onReset = { confirmReset = true }
             )
@@ -223,6 +225,13 @@ private fun LifeShell() {
                 onBack = { page.value = Page.START }
             )
         }
+        Page.DEVELOPMENT_MAP -> {
+            val progress = SkillEngine.progress(session.evidence())
+            DevelopmentMapScreen(
+                progress = progress,
+                onBack = { page.value = Page.START }
+            )
+        }
     }
 
     if (confirmReset) {
@@ -256,7 +265,7 @@ private fun buildGoal(skillId: String, skillTitle: String, domain: com.shadecode
         )
     )
 
-private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE, GOALS, COACH }
+private enum class Page { WELCOME, BASELINE, START, ACTION, TIMELINE, GOALS, COACH, DEVELOPMENT_MAP }
 
 @Composable
 private fun WelcomeScreen(onBegin: () -> Unit) {
