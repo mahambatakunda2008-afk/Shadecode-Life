@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.assessment.BaselineScreen
+import com.shadecode.life.core.engine.DevelopmentEngine
 import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.dashboard.StartingPointScreen
 import com.shadecode.life.ui.theme.ShadecodeLifeTheme
@@ -41,7 +42,11 @@ private fun LifeShell() {
     when (page.value) {
         Page.WELCOME -> WelcomeScreen { page.value = Page.BASELINE }
         Page.BASELINE -> BaselineScreen(session) { page.value = Page.START }
-        Page.START -> StartingPointScreen(session.states(), session.nextFocus())
+        Page.START -> StartingPointScreen(
+            states = session.states(),
+            nextFocus = session.nextFocus(),
+            nextAction = DevelopmentEngine.recommendNextAction(session.states())
+        )
     }
 }
 
