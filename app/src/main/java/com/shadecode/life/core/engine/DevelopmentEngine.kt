@@ -1,5 +1,7 @@
 package com.shadecode.life.core.engine
 
+import com.shadecode.life.core.model.ActionKind
+import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentDomain
 import com.shadecode.life.core.model.DevelopmentState
 import com.shadecode.life.core.model.Evidence
@@ -26,6 +28,29 @@ object DevelopmentEngine {
             .filter { it.evidenceCount == 0 }
             .minByOrNull { foundationOrder(it.domain) }
             ?: states.minByOrNull { it.confidence }
+
+    fun recommendNextAction(states: List<DevelopmentState>): DevelopmentAction? {
+        val focus = chooseNextFocus(states) ?: return null
+        return if (focus.evidenceCount == 0) {
+            DevelopmentAction(
+                id = "measure_${focus.domain.name.lowercase()}",
+                domain = focus.domain,
+                title = "Measure your ${focus.domain.title.lowercase()}",
+                reason = "We do not have enough evidence yet. A small measurement gives us a better starting point than guessing.",
+                estimatedMinutes = 5,
+                kind = ActionKind.MEASURE
+            )
+        } else {
+            DevelopmentAction(
+                id = "practice_${focus.domain.name.lowercase()}",
+                domain = focus.domain,
+                title = "Take one deliberate step in ${focus.domain.title.lowercase()}",
+                reason = "This area has the least evidence confidence, so improving it is the current highest-leverage move.",
+                estimatedMinutes = 15,
+                kind = ActionKind.PRACTICE
+            )
+        }
+    }
 
     private fun confidence(evidenceCount: Int): Double =
         when (evidenceCount) {
