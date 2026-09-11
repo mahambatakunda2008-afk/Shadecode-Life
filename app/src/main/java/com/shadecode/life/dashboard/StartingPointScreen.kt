@@ -28,8 +28,8 @@ fun StartingPointScreen(
     onViewHistory: () -> Unit,
     onViewGoals: () -> Unit,
     onViewCoach: () -> Unit,
-    onExport: () -> Unit,
-    onReset: () -> Unit
+    onExport: () -> Unit = {},
+    onReset: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
