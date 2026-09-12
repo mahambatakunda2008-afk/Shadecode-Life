@@ -7,73 +7,84 @@ object SkillCatalog {
             "body_capacity",
             "Basic physical capacity",
             DevelopmentDomain.BODY,
-            "Build and measure a sustainable physical foundation."
+            "Build and measure a sustainable physical foundation.",
+            metricDirection = MetricDirection.HIGHER_IS_BETTER
         ),
         Skill(
             "wider_knowledge",
             "Build wider knowledge",
             DevelopmentDomain.CULTURE,
-            "Learn and explain ideas beyond your immediate specialization."
+            "Learn and explain ideas beyond your immediate specialization.",
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "concept_explanation",
             "Explain a concept",
             DevelopmentDomain.MIND,
             "Explain something accurately in your own words.",
-            prerequisites = listOf("wider_knowledge")
+            prerequisites = listOf("wider_knowledge"),
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "focused_work",
             "Work with focus",
             DevelopmentDomain.DISCIPLINE,
-            "Complete deliberate work with fewer avoidable interruptions."
+            "Complete deliberate work with fewer avoidable interruptions.",
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "organized_workspace",
             "Maintain an organized environment",
             DevelopmentDomain.ENVIRONMENT,
-            "Keep the space and tools needed for work usable."
+            "Keep the space and tools needed for work usable.",
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "build_artifact",
             "Build a small artifact",
             DevelopmentDomain.CAPABILITY,
             "Turn an idea into something functional or useful.",
-            prerequisites = listOf("focused_work")
+            prerequisites = listOf("focused_work"),
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "clear_speaking",
             "Speak clearly",
             DevelopmentDomain.COMMUNICATION,
             "Communicate an idea with structure, clarity, and purpose.",
-            prerequisites = listOf("concept_explanation")
+            prerequisites = listOf("concept_explanation"),
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "active_listening",
             "Listen actively",
             DevelopmentDomain.SOCIAL,
             "Understand another person before responding.",
-            prerequisites = listOf("clear_speaking")
+            prerequisites = listOf("clear_speaking"),
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "keep_commitment",
             "Keep a commitment",
             DevelopmentDomain.CHARACTER,
             "Do what you deliberately said you would do.",
-            prerequisites = listOf("focused_work")
+            prerequisites = listOf("focused_work"),
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "basic_budgeting",
             "Manage a simple budget",
             DevelopmentDomain.FINANCE,
-            "Track money decisions and make a realistic plan."
+            "Track money decisions and make a realistic plan.",
+            metricDirection = MetricDirection.NOT_COMPARABLE
         ),
         Skill(
             "opportunity_mapping",
             "Map opportunities",
             DevelopmentDomain.CAREER,
             "Identify useful paths, requirements, and next steps.",
-            prerequisites = listOf("basic_budgeting", "clear_speaking")
+            prerequisites = listOf("basic_budgeting", "clear_speaking"),
+            metricDirection = MetricDirection.NOT_COMPARABLE
         )
     )
 }
