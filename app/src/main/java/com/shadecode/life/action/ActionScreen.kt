@@ -18,14 +18,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.core.model.DevelopmentAction
+import com.shadecode.life.core.model.DevelopmentOutcome
 
 @Composable
 fun ActionScreen(
     action: DevelopmentAction,
-    onComplete: (String) -> Unit,
+    onComplete: (DevelopmentOutcome) -> Unit,
     onCancel: () -> Unit
 ) {
     var reflection by remember { mutableStateOf("") }
+    var valueText by remember { mutableStateOf("") }
+    var unit by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -53,8 +56,32 @@ fun ActionScreen(
             placeholder = { Text("Record what you actually did or learned.") }
         )
 
+        OutlinedTextField(
+            value = valueText,
+            onValueChange = { valueText = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Measured result (optional)") },
+            placeholder = { Text("For example: 18") }
+        )
+
+        OutlinedTextField(
+            value = unit,
+            onValueChange = { unit = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Unit (optional)") },
+            placeholder = { Text("For example: push-ups, minutes, items") }
+        )
+
         Button(
-            onClick = { onComplete(reflection.trim()) },
+            onClick = {
+                onComplete(
+                    DevelopmentOutcome(
+                        reflection = reflection.trim(),
+                        value = valueText.trim().toDoubleOrNull(),
+                        unit = unit.trim().takeIf { it.isNotBlank() }
+                    )
+                )
+            },
             enabled = reflection.isNotBlank(),
             modifier = Modifier.fillMaxWidth()
         ) {
