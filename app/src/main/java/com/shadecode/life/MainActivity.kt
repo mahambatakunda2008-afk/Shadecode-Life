@@ -30,7 +30,6 @@ import com.shadecode.life.assessment.BaselineScreen
 import com.shadecode.life.coach.CoachScreen
 import com.shadecode.life.core.engine.CoachEngine
 import com.shadecode.life.core.engine.DailyPlanner
-import com.shadecode.life.core.engine.DevelopmentDecisionEngine
 import com.shadecode.life.core.engine.DevelopmentEngine
 import com.shadecode.life.core.engine.SkillEngine
 import com.shadecode.life.core.model.DevelopmentAction
@@ -40,7 +39,7 @@ import com.shadecode.life.core.model.SkillCatalog
 import com.shadecode.life.core.state.DevelopmentSession
 import com.shadecode.life.core.storage.LocalStateCodec
 import com.shadecode.life.core.storage.LocalStateStore
-import com.shadecode.life.dashboard.StartingPointScreen
+import com.shadecode.life.dashboard.ActionAwareStartingPointScreen
 import com.shadecode.life.development.DevelopmentMapScreen
 import com.shadecode.life.goals.GoalScreen
 import com.shadecode.life.timeline.DevelopmentTimelineScreen
@@ -159,7 +158,7 @@ private fun LifeShell() {
             val states = session.states()
             val evidence = session.evidence()
             val dailyPlan = DailyPlanner.create(states)
-            StartingPointScreen(
+            ActionAwareStartingPointScreen(
                 states = states,
                 nextFocus = session.nextFocus(),
                 nextAction = DevelopmentEngine.recommendNextAction(states),
