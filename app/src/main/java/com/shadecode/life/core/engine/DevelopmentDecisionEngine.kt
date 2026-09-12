@@ -1,8 +1,8 @@
 package com.shadecode.life.core.engine
 
-import com.shadecode.life.core.model.ActionKind
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.Evidence
+import com.shadecode.life.core.model.EvidenceKind
 import com.shadecode.life.core.model.Skill
 import com.shadecode.life.core.model.SkillCatalog
 import com.shadecode.life.core.model.SkillProgress
@@ -10,10 +10,10 @@ import com.shadecode.life.core.model.SkillStage
 import com.shadecode.life.core.model.SkillStatus
 
 /**
- * Chooses the next capability to develop from the current evidence graph.
+ * Chooses the next capability and turns that decision into a concrete action.
  *
- * This is deliberately deterministic and explainable. It does not invent a
- * personality score or pretend that every capability has equal leverage.
+ * The decision is deterministic and explainable. Action selection is based on
+ * the capability stage and existing evidence rather than a generic task pool.
  */
 object DevelopmentDecisionEngine {
     data class Decision(
@@ -38,46 +38,52 @@ object DevelopmentDecisionEngine {
             .maxWithOrNull(compareBy<Decision>({ it.priority }, { -stageRank(it.progress.stage) }, { -SkillCatalog.all.indexOf(it.skill) }))
     }
 
-    /** Turns a selected capability into a concrete action the user can start now. */
-    fun actionFor(decision: Decision): DevelopmentAction {
-        val measuring = decision.progress.evidenceCount == 0
-        val (title, minutes, kind) = when (decision.skill.id) {
-            "body_capacity" -> if (measuring) Triple("Measure your current physical capacity", 5, ActionKind.MEASURE)
-            else Triple("Complete a short physical capacity session", 15, ActionKind.PRACTICE)
-            "wider_knowledge" -> if (measuring) Triple("Capture one thing you know and explain it", 5, ActionKind.MEASURE)
-            else Triple("Learn one idea outside your usual specialization", 20, ActionKind.PRACTICE)
-            "concept_explanation" -> if (measuring) Triple("Explain one concept in your own words", 5, ActionKind.MEASURE)
-            else Triple("Explain one concept without looking at your notes", 10, ActionKind.PRACTICE)
-            "focused_work" -> if (measuring) Triple("Run one focused work session", 20, ActionKind.MEASURE)
-            else Triple("Complete one uninterrupted focused work block", 25, ActionKind.PRACTICE)
-            "organized_workspace" -> if (measuring) Triple("Do a five-minute workspace reset", 5, ActionKind.MEASURE)
-            else Triple("Reset the workspace you rely on most", 10, ActionKind.PRACTICE)
-            "build_artifact" -> if (measuring) Triple("Define a tiny artifact you can finish", 10, ActionKind.MEASURE)
-            else Triple("Build one small working artifact", 30, ActionKind.PRACTICE)
-            "clear_speaking" -> if (measuring) Triple("Record a one-minute explanation", 5, ActionKind.MEASURE)
-            else Triple("Record and review a one-minute explanation", 10, ActionKind.PRACTICE)
-            "active_listening" -> if (measuring) Triple("Notice and record how you listen in one conversation", 5, ActionKind.MEASURE)
-            else Triple("Have one conversation where you listen before responding", 15, ActionKind.PRACTICE)
-            "keep_commitment" -> if (measuring) Triple("Choose one commitment you can keep today", 5, ActionKind.MEASURE)
-            else Triple("Complete one commitment you deliberately made", 15, ActionKind.PRACTICE)
-            "basic_budgeting" -> if (measuring) Triple("Record today's money position", 5, ActionKind.MEASURE)
-            else Triple("Make a simple plan for your next spending decision", 15, ActionKind.PRACTICE)
-            "opportunity_mapping" -> if (measuring) Triple("Map one opportunity and its requirements", 10, ActionKind.MEASURE)
-            else Triple("Map one opportunity into concrete next steps", 20, ActionKind.PRACTICE)
-            else -> if (measuring) Triple("Collect one useful observation", 5, ActionKind.MEASURE)
-            else Triple("Practice this capability deliberately", 15, ActionKind.PRACTICE)
-        }
+    fun nextAction(evidence: List<Evidence>): DevelopmentAction? =
+        next(evidence)?.let { actionFor(it, evidence) }
 
+    fun actionFor(decision: Decision, evidence: List<Evidence>): DevelopmentAction {
+        val skill = decision.skill
+        val prior = evidence.filter { it.skillId == skill.id }
+        val hasMeasuredEvidence = prior.any { it.kind == EvidenceKind.MEASUREMENT }
+        val action = when (skill.id) {
+            "body_capacity" -> when (decision.progress.stage) {
+                SkillStage.FOUNDATION -> ActionSpec("Establish a physical baseline", "Choose push-ups, a plank, and a 10-minute walk. Record honest results without trying to impress the app.", 15)
+                else -> ActionSpec("Repeat your physical baseline", "Repeat the same simple measures under similar conditions. Compare with your previous evidence.", 15)
+            }
+            "wider_knowledge" -> ActionSpec("Learn and explain one unfamiliar idea", "Spend focused time learning one idea outside your usual work, then explain it in your own words.", 20)
+            "concept_explanation" -> ActionSpec("Explain one concept from memory", "Pick something you know, explain it without notes, then check for gaps and correct them.", 15)
+            "focused_work" -> ActionSpec("Run one distraction-free work block", "Choose one meaningful task, remove avoidable interruptions, and work on it continuously until the block ends.", 25)
+            "organized_workspace" -> ActionSpec("Reset your working environment", "Make the space and tools you use for important work immediately usable. Remove only what blocks tomorrow's work.", 15)
+            "build_artifact" -> ActionSpec("Build a small working artifact", "Turn one small idea into something functional. Keep the scope narrow enough to finish and demonstrate.", 30)
+            "clear_speaking" -> ActionSpec("Record a clear two-minute explanation", "Explain one idea aloud with a beginning, middle, and end. Listen back and note one clarity improvement.", 15)
+            "active_listening" -> ActionSpec("Practice active listening", "Have one conversation where you focus on understanding first. Summarize the other person's point before giving your response.", 15)
+            "keep_commitment" -> ActionSpec("Keep one deliberate commitment", "Choose one promise you made to yourself or someone else. Complete it today and record what helped or got in the way.", 20)
+            "basic_budgeting" -> ActionSpec("Build a simple budget", "List expected money in and out for a short period. Identify one decision that protects your future options.", 20)
+            "opportunity_mapping" -> ActionSpec("Map one real opportunity", "Choose an opportunity and write down the requirement, current gap, next action, and evidence that would show progress.", 20)
+            else -> ActionSpec("Practice ${skill.title.lowercase()}", "Do one deliberate practice session for this capability and record what happened.", 15)
+        }
+        val reason = when {
+            !hasMeasuredEvidence && decision.progress.evidenceCount == 0 ->
+                "This is a first measurement for ${skill.title}. The goal is useful evidence, not a perfect performance."
+            decision.progress.stage == SkillStage.DEVELOPING ->
+                "You have started this capability. This action increases repeatable evidence instead of just adding another checkbox."
+            decision.progress.stage == SkillStage.FUNCTIONAL ->
+                "This capability is functional. Repeating it in a deliberate setting helps test whether it holds up consistently."
+            decision.progress.stage == SkillStage.RELIABLE ->
+                "This capability is becoming reliable. The action now asks for evidence in a meaningful situation."
+            else -> decision.reason
+        }
         return DevelopmentAction(
-            id = "develop_${decision.skill.id}_${kind.name.lowercase()}",
-            domain = decision.skill.domain,
-            title = title,
-            reason = decision.reason,
-            estimatedMinutes = minutes,
-            kind = kind,
-            skillId = decision.skill.id
+            id = "skill-${skill.id}-${decision.progress.evidenceCount + 1}",
+            title = action.title,
+            reason = reason,
+            domain = skill.domain,
+            estimatedMinutes = action.minutes,
+            targetSkillId = skill.id
         )
     }
+
+    private data class ActionSpec(val title: String, val reason: String, val minutes: Int)
 
     private fun priorityFor(candidate: SkillProgress, all: List<SkillProgress>): Double {
         val stageGap = when (candidate.stage) {
