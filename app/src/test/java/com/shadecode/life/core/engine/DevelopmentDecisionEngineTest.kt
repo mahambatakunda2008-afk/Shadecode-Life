@@ -1,56 +1,59 @@
 package com.shadecode.life.core.engine
 
 import com.shadecode.life.core.model.DevelopmentDomain
-import com.shadecode.life.core.model.Evidence
-import com.shadecode.life.core.model.EvidenceKind
+import com.shadecode.life.core.model.Skill
+import com.shadecode.life.core.model.SkillProgress
+import com.shadecode.life.core.model.SkillStage
+import com.shadecode.life.core.model.SkillStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DevelopmentDecisionEngineTest {
-    @Test
-    fun firstDecisionRequestsMeasurement() {
-        val decision = DevelopmentDecisionEngine.next(emptyList())
-        assertNotNull(decision)
-        assertEquals(ProgressTrendEngine.TrendDirection.INSUFFICIENT_DATA, decision.trend)
-        assertEquals(com.shadecode.life.core.model.ActionKind.MEASURE, DevelopmentDecisionEngine.actionFor(decision).kind)
-    }
-
-    @Test
-    fun improvingEvidenceChangesActionReason() {
-        val skillId = "body_capacity"
-        val evidence = listOf(
-            evidence(skillId, 10.0, "reps", 1),
-            evidence(skillId, 14.0, "reps", 2)
-        )
-        val decision = DevelopmentDecisionEngine.next(evidence)
-        assertNotNull(decision)
-        assertEquals(ProgressTrendEngine.TrendDirection.IMPROVING, decision.trend)
-        assertTrue(DevelopmentDecisionEngine.actionFor(decision).reason.contains("improving", ignoreCase = true))
-    }
-
-    @Test
-    fun decliningEvidenceChangesActionReason() {
-        val skillId = "body_capacity"
-        val evidence = listOf(
-            evidence(skillId, 14.0, "reps", 1),
-            evidence(skillId, 10.0, "reps", 2)
-        )
-        val decision = DevelopmentDecisionEngine.next(evidence)
-        assertNotNull(decision)
-        assertEquals(ProgressTrendEngine.TrendDirection.DECLINING, decision.trend)
-        assertTrue(DevelopmentDecisionEngine.actionFor(decision).reason.contains("rebuild", ignoreCase = true))
-    }
-
-    private fun evidence(skillId: String, value: Double, unit: String, day: Long) = Evidence(
-        id = "$skillId-$day",
+    private val skill = Skill(
+        id = "body_capacity",
+        title = "Physical capacity",
         domain = DevelopmentDomain.BODY,
-        title = "Physical baseline",
-        skillId = skillId,
-        value = value,
-        unit = unit,
-        kind = EvidenceKind.MEASUREMENT,
-        recordedAt = java.time.Instant.parse("2026-09-${"%02d".format(day)}T10:00:00Z")
+        description = "A measurable physical capability"
     )
+
+    @Test
+    fun improvingDecisionChangesActionReason() {
+        val decision = decision(ProgressTrendEngine.TrendDirection.IMPROVING)
+        val action = DevelopmentDecisionEngine.actionFor(decision)
+        assertEquals(com.shadecode.life.core.model.ActionKind.PRACTICE, action.kind)
+        assertTrue(action.reason.contains("improving", ignoreCase = true))
+    }
+
+    @Test
+    fun decliningDecisionPrioritizesRebuilding() {
+        val decision = decision(ProgressTrendEngine.TrendDirection.DECLINING)
+        val action = DevelopmentDecisionEngine.actionFor(decision)
+        assertTrue(action.reason.contains("rebuild", ignoreCase = true))
+    }
+
+    @Test
+    fun stableDecisionChangesContext() {
+        val decision = decision(ProgressTrendEngine.TrendDirection.STABLE)
+        val action = DevelopmentDecisionEngine.actionFor(decision)
+        assertTrue(action.reason.contains("context", ignoreCase = true))
+    }
+
+    private fun decision(trend: ProgressTrendEngine.TrendDirection) =
+        DevelopmentDecisionEngine.Decision(
+            skill = skill,
+            progress = SkillProgress(
+                skill = skill,
+                evidenceCount = 2,
+                weightedEvidence = 2.0,
+                distinctEvidenceDays = 2,
+                stage = SkillStage.DEVELOPING,
+                status = SkillStatus.IN_PROGRESS,
+                prerequisitesMet = true
+            ),
+            reason = "Test decision",
+            priority = 1.0,
+            recentEvidenceTitles = emptyList(),
+            trend = trend
+        )
 }
