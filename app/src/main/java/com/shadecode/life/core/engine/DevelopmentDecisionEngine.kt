@@ -1,5 +1,7 @@
 package com.shadecode.life.core.engine
 
+import com.shadecode.life.core.model.ActionKind
+import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.model.Skill
 import com.shadecode.life.core.model.SkillCatalog
@@ -36,6 +38,47 @@ object DevelopmentDecisionEngine {
             .maxWithOrNull(compareBy<Decision>({ it.priority }, { -stageRank(it.progress.stage) }, { -SkillCatalog.all.indexOf(it.skill) }))
     }
 
+    /** Turns a selected capability into a concrete action the user can start now. */
+    fun actionFor(decision: Decision): DevelopmentAction {
+        val measuring = decision.progress.evidenceCount == 0
+        val (title, minutes, kind) = when (decision.skill.id) {
+            "body_capacity" -> if (measuring) Triple("Measure your current physical capacity", 5, ActionKind.MEASURE)
+            else Triple("Complete a short physical capacity session", 15, ActionKind.PRACTICE)
+            "wider_knowledge" -> if (measuring) Triple("Capture one thing you know and explain it", 5, ActionKind.MEASURE)
+            else Triple("Learn one idea outside your usual specialization", 20, ActionKind.PRACTICE)
+            "concept_explanation" -> if (measuring) Triple("Explain one concept in your own words", 5, ActionKind.MEASURE)
+            else Triple("Explain one concept without looking at your notes", 10, ActionKind.PRACTICE)
+            "focused_work" -> if (measuring) Triple("Run one focused work session", 20, ActionKind.MEASURE)
+            else Triple("Complete one uninterrupted focused work block", 25, ActionKind.PRACTICE)
+            "organized_workspace" -> if (measuring) Triple("Do a five-minute workspace reset", 5, ActionKind.MEASURE)
+            else Triple("Reset the workspace you rely on most", 10, ActionKind.PRACTICE)
+            "build_artifact" -> if (measuring) Triple("Define a tiny artifact you can finish", 10, ActionKind.MEASURE)
+            else Triple("Build one small working artifact", 30, ActionKind.PRACTICE)
+            "clear_speaking" -> if (measuring) Triple("Record a one-minute explanation", 5, ActionKind.MEASURE)
+            else Triple("Record and review a one-minute explanation", 10, ActionKind.PRACTICE)
+            "active_listening" -> if (measuring) Triple("Notice and record how you listen in one conversation", 5, ActionKind.MEASURE)
+            else Triple("Have one conversation where you listen before responding", 15, ActionKind.PRACTICE)
+            "keep_commitment" -> if (measuring) Triple("Choose one commitment you can keep today", 5, ActionKind.MEASURE)
+            else Triple("Complete one commitment you deliberately made", 15, ActionKind.PRACTICE)
+            "basic_budgeting" -> if (measuring) Triple("Record today's money position", 5, ActionKind.MEASURE)
+            else Triple("Make a simple plan for your next spending decision", 15, ActionKind.PRACTICE)
+            "opportunity_mapping" -> if (measuring) Triple("Map one opportunity and its requirements", 10, ActionKind.MEASURE)
+            else Triple("Map one opportunity into concrete next steps", 20, ActionKind.PRACTICE)
+            else -> if (measuring) Triple("Collect one useful observation", 5, ActionKind.MEASURE)
+            else Triple("Practice this capability deliberately", 15, ActionKind.PRACTICE)
+        }
+
+        return DevelopmentAction(
+            id = "develop_${decision.skill.id}_${kind.name.lowercase()}",
+            domain = decision.skill.domain,
+            title = title,
+            reason = decision.reason,
+            estimatedMinutes = minutes,
+            kind = kind,
+            skillId = decision.skill.id
+        )
+    }
+
     private fun priorityFor(candidate: SkillProgress, all: List<SkillProgress>): Double {
         val stageGap = when (candidate.stage) {
             SkillStage.FOUNDATION -> 1.0
@@ -54,7 +97,7 @@ object DevelopmentDecisionEngine {
         val unlocks = all.count { it.skill.prerequisites.contains(candidate.skill.id) }
         return when {
             candidate.evidenceCount == 0 && unlocks > 0 ->
-                "There is no evidence for this capability yet, and developing it can unlock $unlocks other capability${if (unlocks == 1) "" else "ies"}."
+                "There is no evidence for this capability yet, and developing it can unlock $unlocks other capabilit${if (unlocks == 1) "y" else "ies"}."
             candidate.evidenceCount == 0 ->
                 "There is no evidence for this capability yet. Measuring it gives your personal model a useful starting point."
             candidate.stage == SkillStage.DEVELOPING ->
