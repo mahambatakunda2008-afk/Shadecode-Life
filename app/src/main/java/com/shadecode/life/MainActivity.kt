@@ -181,7 +181,7 @@ private fun LifeShell() {
             ActionScreen(
                 action = action,
                 onComplete = { outcome: DevelopmentOutcome ->
-                    session.recordAction(action, outcome.reflection, outcome.value, outcome.unit)
+                    session.recordAction(action, outcome)
                     persist()
                     activeAction.value = null
                     page.value = Page.START
@@ -232,6 +232,7 @@ private fun LifeShell() {
             val progress = SkillEngine.progress(session.evidence())
             DevelopmentMapScreen(
                 progress = progress,
+                evidence = session.evidence(),
                 onBack = { page.value = Page.START }
             )
         }
