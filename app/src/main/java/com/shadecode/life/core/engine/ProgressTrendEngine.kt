@@ -1,6 +1,7 @@
 package com.shadecode.life.core.engine
 
 import com.shadecode.life.core.model.Evidence
+import com.shadecode.life.core.model.MetricDirection
 import com.shadecode.life.core.model.Skill
 import com.shadecode.life.core.model.SkillCatalog
 import java.time.Instant
@@ -45,10 +46,12 @@ object ProgressTrendEngine {
         val change = if (latest != null && previous != null) latest.value!! - previous.value!! else null
 
         val direction = when {
+            skill.metricDirection == MetricDirection.NOT_COMPARABLE -> TrendDirection.INSUFFICIENT_DATA
             numeric.size < 2 -> TrendDirection.INSUFFICIENT_DATA
             change == null -> TrendDirection.INSUFFICIENT_DATA
             kotlin.math.abs(change) <= tolerance(previous!!.value!!) -> TrendDirection.STABLE
-            change > 0 -> TrendDirection.IMPROVING
+            skill.metricDirection == MetricDirection.HIGHER_IS_BETTER && change > 0 -> TrendDirection.IMPROVING
+            skill.metricDirection == MetricDirection.LOWER_IS_BETTER && change < 0 -> TrendDirection.IMPROVING
             else -> TrendDirection.DECLINING
         }
 
