@@ -34,6 +34,7 @@ import com.shadecode.life.core.engine.DevelopmentEngine
 import com.shadecode.life.core.engine.SkillEngine
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentGoal
+import com.shadecode.life.core.model.DevelopmentOutcome
 import com.shadecode.life.core.model.GoalMilestone
 import com.shadecode.life.core.model.SkillCatalog
 import com.shadecode.life.core.state.DevelopmentSession
@@ -179,8 +180,8 @@ private fun LifeShell() {
         Page.ACTION -> activeAction.value?.let { action ->
             ActionScreen(
                 action = action,
-                onComplete = { reflection ->
-                    session.recordAction(action, reflection)
+                onComplete = { outcome: DevelopmentOutcome ->
+                    session.recordAction(action, outcome.reflection, outcome.value, outcome.unit)
                     persist()
                     activeAction.value = null
                     page.value = Page.START
