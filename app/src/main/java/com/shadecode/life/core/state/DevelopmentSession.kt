@@ -1,10 +1,13 @@
 package com.shadecode.life.core.state
 
 import com.shadecode.life.core.engine.DevelopmentEngine
+import com.shadecode.life.core.model.ActionKind
 import com.shadecode.life.core.model.DevelopmentAction
+import com.shadecode.life.core.model.DevelopmentDomain
 import com.shadecode.life.core.model.DevelopmentEvent
 import com.shadecode.life.core.model.DevelopmentState
 import com.shadecode.life.core.model.Evidence
+import com.shadecode.life.core.model.EvidenceKind
 import com.shadecode.life.core.model.EventType
 
 class DevelopmentSession {
@@ -34,6 +37,7 @@ class DevelopmentSession {
             title = action.title,
             skillId = action.skillId,
             note = detail,
+            kind = evidenceKindFor(action),
             recordedAt = occurredAt
         )
         events += DevelopmentEvent(
@@ -54,6 +58,15 @@ class DevelopmentSession {
                 occurredAt = occurredAt
             )
         }
+    }
+
+    private fun evidenceKindFor(action: DevelopmentAction): EvidenceKind = when {
+        action.kind == ActionKind.MEASURE -> EvidenceKind.MEASUREMENT
+        action.kind == ActionKind.REFLECT -> EvidenceKind.REFLECTION
+        action.skillId == "build_artifact" -> EvidenceKind.ARTIFACT
+        action.skillId == "clear_speaking" || action.skillId == "active_listening" -> EvidenceKind.COMMUNICATION
+        action.domain == DevelopmentDomain.COMMUNICATION || action.domain == DevelopmentDomain.SOCIAL -> EvidenceKind.COMMUNICATION
+        else -> EvidenceKind.COMPLETED_TASK
     }
 
     fun replaceState(savedEvidence: List<Evidence>, savedEvents: List<DevelopmentEvent>) {
