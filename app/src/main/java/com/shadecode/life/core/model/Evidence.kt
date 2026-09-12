@@ -12,7 +12,9 @@ data class Evidence(
     val unit: String? = null,
     val note: String? = null,
     val kind: EvidenceKind = EvidenceKind.OBSERVATION,
-    val recordedAt: Instant = Instant.now()
+    val recordedAt: Instant = Instant.now(),
+    /** Links outcome evidence back to the action that produced it. Null for baseline/manual evidence. */
+    val sourceActionId: String? = null
 )
 
 enum class EvidenceKind {
