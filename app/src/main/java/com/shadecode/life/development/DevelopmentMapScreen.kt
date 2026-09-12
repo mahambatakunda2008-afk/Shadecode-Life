@@ -20,17 +20,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.shadecode.life.core.engine.ProgressTrendEngine
 import com.shadecode.life.core.model.DevelopmentDomain
+import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.model.SkillProgress
 import com.shadecode.life.core.model.SkillStage
 
 @Composable
 fun DevelopmentMapScreen(
     progress: List<SkillProgress>,
+    evidence: List<Evidence>,
     onBack: () -> Unit
 ) {
     var selectedSkillId by remember { mutableStateOf(progress.firstOrNull()?.skill?.id) }
     val selected = progress.firstOrNull { it.skill.id == selectedSkillId }
+    val trends = remember(evidence, progress) {
+        progress.associate { it.skill.id to ProgressTrendEngine.forSkill(it.skill, evidence) }
+    }
 
     Column(
         modifier = Modifier
@@ -51,7 +57,7 @@ fun DevelopmentMapScreen(
             Button(onClick = onBack) { Text("Back") }
         }
 
-        selected?.let { SkillDetailCard(it) }
+        selected?.let { SkillDetailCard(it, trends[it.skill.id]) }
 
         DevelopmentDomain.entries.forEach { domain ->
             val domainSkills = progress.filter { it.skill.domain == domain }
@@ -61,6 +67,7 @@ fun DevelopmentMapScreen(
                 domainSkills.forEach { skill ->
                     SkillMapCard(
                         progress = skill,
+                        trend = trends[skill.skill.id],
                         selected = skill.skill.id == selectedSkillId,
                         onClick = { selectedSkillId = skill.skill.id }
                     )
@@ -73,6 +80,7 @@ fun DevelopmentMapScreen(
 @Composable
 private fun SkillMapCard(
     progress: SkillProgress,
+    trend: ProgressTrendEngine.Trend?,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -93,13 +101,14 @@ private fun SkillMapCard(
                     if (progress.prerequisitesMet) "prerequisites met" else "prerequisite work first",
                 style = MaterialTheme.typography.labelMedium
             )
+            trend?.let { TrendSummary(it) }
             if (selected) Text("Selected", style = MaterialTheme.typography.labelMedium)
         }
     }
 }
 
 @Composable
-private fun SkillDetailCard(progress: SkillProgress) {
+private fun SkillDetailCard(progress: SkillProgress, trend: ProgressTrendEngine.Trend?) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Current capability", style = MaterialTheme.typography.labelLarge)
@@ -108,6 +117,7 @@ private fun SkillDetailCard(progress: SkillProgress) {
             Text("Stage: ${stageLabel(progress.stage)}", style = MaterialTheme.typography.bodyMedium)
             Text("Weighted evidence: ${"%.1f".format(progress.weightedEvidence)}", style = MaterialTheme.typography.bodyMedium)
             Text("Evidence days: ${progress.distinctEvidenceDays}", style = MaterialTheme.typography.bodyMedium)
+            trend?.let { TrendSummary(it, detailed = true) }
             Text(
                 if (progress.prerequisitesMet) {
                     "The capability is available to develop now. Keep collecting real evidence rather than chasing a number."
@@ -118,6 +128,43 @@ private fun SkillDetailCard(progress: SkillProgress) {
             )
         }
     }
+}
+
+@Composable
+private fun TrendSummary(trend: ProgressTrendEngine.Trend, detailed: Boolean = false) {
+    val latest = trend.latestValue
+    val previous = trend.previousValue
+    val change = trend.change
+    val label = when (trend.direction) {
+        ProgressTrendEngine.TrendDirection.IMPROVING -> "Improving"
+        ProgressTrendEngine.TrendDirection.DECLINING -> "Declining"
+        ProgressTrendEngine.TrendDirection.STABLE -> "Stable"
+        ProgressTrendEngine.TrendDirection.INSUFFICIENT_DATA -> "More evidence needed"
+    }
+    val measurement = when {
+        latest == null -> "No numeric measurements yet"
+        previous == null -> "Latest measurement: ${formatNumber(latest)}"
+        else -> "${formatNumber(previous)} → ${formatNumber(latest)} (${formatChange(change)})"
+    }
+    Text(
+        if (detailed) "Trajectory: $label · $measurement" else "Trajectory: $label · $measurement",
+        style = MaterialTheme.typography.labelMedium
+    )
+    if (detailed && trend.measuredCount >= 2) {
+        Text(
+            "Based on ${trend.measuredCount} numeric measurements. Trends describe the evidence; they do not assign a personal score.",
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+private fun formatNumber(value: Double): String =
+    if (value % 1.0 == 0.0) value.toInt().toString() else "%.2f".format(value)
+
+private fun formatChange(value: Double?): String = when {
+    value == null -> ""
+    value > 0 -> "+${formatNumber(value)}"
+    else -> formatNumber(value)
 }
 
 private fun stageLabel(stage: SkillStage): String = when (stage) {
