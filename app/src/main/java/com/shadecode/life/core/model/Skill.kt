@@ -7,8 +7,15 @@ data class Skill(
     val domain: DevelopmentDomain,
     val description: String,
     val prerequisites: List<String> = emptyList(),
-    val stageThresholds: List<Int> = listOf(1, 3, 5, 8)
+    val stageThresholds: List<Int> = listOf(1, 3, 5, 8),
+    val metricDirection: MetricDirection = MetricDirection.HIGHER_IS_BETTER
 )
+
+enum class MetricDirection {
+    HIGHER_IS_BETTER,
+    LOWER_IS_BETTER,
+    NOT_COMPARABLE
+}
 
 data class SkillProgress(
     val skill: Skill,
