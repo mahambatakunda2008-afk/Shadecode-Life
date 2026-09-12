@@ -5,6 +5,7 @@ import com.shadecode.life.core.model.ActionKind
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentDomain
 import com.shadecode.life.core.model.DevelopmentEvent
+import com.shadecode.life.core.model.DevelopmentOutcome
 import com.shadecode.life.core.model.DevelopmentState
 import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.model.EvidenceKind
@@ -28,14 +29,16 @@ class DevelopmentSession {
         }
     }
 
-    fun recordAction(action: DevelopmentAction, reflection: String) {
-        val detail = reflection.ifBlank { "Action completed." }
+    fun recordAction(action: DevelopmentAction, outcome: DevelopmentOutcome) {
+        val detail = outcome.reflection.ifBlank { "Action completed." }
         val occurredAt = java.time.Instant.now()
         evidence += Evidence(
             id = "action_${action.id}_${evidence.size}",
             domain = action.domain,
             title = action.title,
             skillId = action.skillId,
+            value = outcome.value,
+            unit = outcome.unit,
             note = detail,
             kind = evidenceKindFor(action),
             recordedAt = occurredAt
@@ -45,18 +48,27 @@ class DevelopmentSession {
             title = action.title,
             domain = action.domain,
             type = EventType.ACTION_COMPLETED,
-            detail = detail,
+            detail = evidenceDetail(outcome),
             occurredAt = occurredAt
         )
-        if (reflection.isNotBlank()) {
+        if (outcome.reflection.isNotBlank()) {
             events += DevelopmentEvent(
                 id = "reflection_${action.id}_${events.size}",
                 title = "Reflection",
                 domain = action.domain,
                 type = EventType.REFLECTION,
-                detail = reflection,
+                detail = outcome.reflection,
                 occurredAt = occurredAt
             )
+        }
+    }
+
+    private fun evidenceDetail(outcome: DevelopmentOutcome): String = buildString {
+        append(outcome.reflection.ifBlank { "Action completed." })
+        outcome.value?.let { value ->
+            append(" | Result: ")
+            append(value)
+            outcome.unit?.takeIf { it.isNotBlank() }?.let { append(" ").append(it) }
         }
     }
 
