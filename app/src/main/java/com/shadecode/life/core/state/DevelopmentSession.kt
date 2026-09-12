@@ -41,8 +41,7 @@ class DevelopmentSession {
             unit = outcome.unit,
             note = detail,
             kind = evidenceKindFor(action),
-            recordedAt = occurredAt,
-            sourceActionId = action.id
+            recordedAt = occurredAt
         )
         events += DevelopmentEvent(
             id = "action_${action.id}_${events.size}",
