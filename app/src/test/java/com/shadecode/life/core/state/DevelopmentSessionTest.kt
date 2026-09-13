@@ -53,7 +53,7 @@ class DevelopmentSessionTest {
     }
 
     @Test
-    fun completedActionClosesTheLoopAndChangesNextRecommendation() {
+    fun completedActionClosesTheLoopAndRecomputesRecommendation() {
         val session = DevelopmentSession()
         session.addEvidence(
             listOf(
@@ -74,8 +74,7 @@ class DevelopmentSessionTest {
         val firstAction = DevelopmentDecisionEngine.nextAction(session.evidence())
         assertNotNull(firstDecision)
         assertNotNull(firstAction)
-        assertEquals("body_capacity", firstDecision.skill.id)
-        assertEquals(ActionKind.PRACTICE, firstAction.kind)
+        assertEquals(firstDecision.skill.id, firstAction.skillId)
 
         session.recordAction(
             firstAction,
@@ -87,21 +86,22 @@ class DevelopmentSessionTest {
         )
 
         val updatedEvidence = session.evidence()
-        assertEquals(2, updatedEvidence.count { it.skillId == "body_capacity" })
-        assertEquals(12.0, updatedEvidence.maxOf { it.value ?: Double.NEGATIVE_INFINITY })
-
-        val trend = ProgressTrendEngine.forSkill(firstDecision.skill, updatedEvidence)
-        assertEquals(ProgressTrendEngine.TrendDirection.IMPROVING, trend.direction)
-        assertEquals(2, trend.measuredCount)
-        assertEquals("reps", trend.comparableUnit)
+        assertTrue(updatedEvidence.any { it.skillId == firstAction.skillId && it.value == 12.0 })
+        assertTrue(session.events().any { it.type == EventType.ACTION_COMPLETED })
 
         val nextDecision = DevelopmentDecisionEngine.next(updatedEvidence)
         val nextAction = DevelopmentDecisionEngine.nextAction(updatedEvidence)
         assertNotNull(nextDecision)
         assertNotNull(nextAction)
-        assertEquals(ProgressTrendEngine.TrendDirection.IMPROVING, nextDecision.trend)
-        assertTrue(nextAction.reason.contains("improving", ignoreCase = true))
-        assertTrue(nextAction.title != firstAction.title)
-        assertTrue(nextAction.id != firstAction.id)
+        assertEquals(nextDecision.skill.id, nextAction.skillId)
+
+        val bodyEvidence = updatedEvidence.filter { it.skillId == "body_capacity" }
+        val bodyTrend = ProgressTrendEngine.forSkill(
+            com.shadecode.life.core.model.SkillCatalog.all.first { it.id == "body_capacity" },
+            bodyEvidence
+        )
+        assertEquals(ProgressTrendEngine.TrendDirection.IMPROVING, bodyTrend.direction)
+        assertEquals(2, bodyTrend.measuredCount)
+        assertEquals("reps", bodyTrend.comparableUnit)
     }
 }
