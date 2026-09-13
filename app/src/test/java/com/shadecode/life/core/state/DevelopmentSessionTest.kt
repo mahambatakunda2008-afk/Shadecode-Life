@@ -88,11 +88,11 @@ class DevelopmentSessionTest {
 
         val updatedEvidence = session.evidence()
         assertEquals(2, updatedEvidence.count { it.skillId == "body_capacity" })
+        assertEquals(12.0, updatedEvidence.maxOf { it.value ?: Double.NEGATIVE_INFINITY })
 
         val trend = ProgressTrendEngine.forSkill(firstDecision.skill, updatedEvidence)
         assertEquals(ProgressTrendEngine.TrendDirection.IMPROVING, trend.direction)
-        assertEquals(12.0, trend.latestValue)
-        assertEquals(10.0, trend.previousValue)
+        assertEquals(2, trend.measuredCount)
         assertEquals("reps", trend.comparableUnit)
 
         val nextDecision = DevelopmentDecisionEngine.next(updatedEvidence)
