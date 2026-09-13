@@ -92,7 +92,7 @@ private fun SkillMapCard(
             }
             Text(progress.skill.description, style = MaterialTheme.typography.bodyMedium)
             LinearProgressIndicator(
-                progress = stageProgress(progress.stage),
+                progress = { stageProgress(progress.stage) },
                 modifier = Modifier.fillMaxWidth()
             )
             Text(
