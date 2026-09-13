@@ -91,7 +91,9 @@ class DevelopmentSessionTest {
 
         val trend = ProgressTrendEngine.forSkill(firstDecision.skill, updatedEvidence)
         assertEquals(ProgressTrendEngine.TrendDirection.IMPROVING, trend.direction)
-        assertEquals(2.0, trend.change)
+        assertEquals(12.0, trend.latestValue)
+        assertEquals(10.0, trend.previousValue)
+        assertEquals("reps", trend.comparableUnit)
 
         val nextDecision = DevelopmentDecisionEngine.next(updatedEvidence)
         val nextAction = DevelopmentDecisionEngine.nextAction(updatedEvidence)
