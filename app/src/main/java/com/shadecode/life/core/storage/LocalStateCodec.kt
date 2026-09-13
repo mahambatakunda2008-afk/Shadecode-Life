@@ -1,12 +1,12 @@
 package com.shadecode.life.core.storage
 
-import android.util.Base64
 import com.shadecode.life.core.model.DevelopmentDomain
 import com.shadecode.life.core.model.DevelopmentEvent
 import com.shadecode.life.core.model.EventType
 import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.model.EvidenceKind
 import java.time.Instant
+import java.util.Base64
 
 internal object LocalStateCodec {
     fun encodeRecords(items: List<Evidence>): String = items.joinToString("\n") { item ->
@@ -28,6 +28,7 @@ internal object LocalStateCodec {
         .mapNotNull { line ->
             runCatching {
                 val parts = line.split('|').map(::decode)
+                require(parts.size == 9)
                 Evidence(
                     id = parts[0],
                     domain = DevelopmentDomain.valueOf(parts[1]),
@@ -59,6 +60,7 @@ internal object LocalStateCodec {
         .mapNotNull { line ->
             runCatching {
                 val parts = line.split('|').map(::decode)
+                require(parts.size == 6)
                 DevelopmentEvent(
                     id = parts[0],
                     title = parts[1],
@@ -72,8 +74,8 @@ internal object LocalStateCodec {
         .toList()
 
     private fun encode(value: String): String =
-        Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        Base64.getEncoder().withoutPadding().encodeToString(value.toByteArray(Charsets.UTF_8))
 
     private fun decode(value: String): String =
-        String(Base64.decode(value, Base64.NO_WRAP), Charsets.UTF_8)
+        String(Base64.getDecoder().decode(value), Charsets.UTF_8)
 }
