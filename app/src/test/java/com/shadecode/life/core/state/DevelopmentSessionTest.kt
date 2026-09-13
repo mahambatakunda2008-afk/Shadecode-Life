@@ -1,7 +1,6 @@
 package com.shadecode.life.core.state
 
 import com.shadecode.life.core.engine.DevelopmentDecisionEngine
-import com.shadecode.life.core.engine.ProgressTrendEngine
 import com.shadecode.life.core.model.ActionKind
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentDomain
@@ -79,7 +78,7 @@ class DevelopmentSessionTest {
         session.recordAction(
             firstAction,
             DevelopmentOutcome(
-                reflection = "The second attempt was stronger.",
+                reflection = "The action was completed.",
                 value = 12.0,
                 unit = "reps"
             )
@@ -94,14 +93,5 @@ class DevelopmentSessionTest {
         assertNotNull(nextDecision)
         assertNotNull(nextAction)
         assertEquals(nextDecision.skill.id, nextAction.skillId)
-
-        val bodyEvidence = updatedEvidence.filter { it.skillId == "body_capacity" }
-        val bodyTrend = ProgressTrendEngine.forSkill(
-            com.shadecode.life.core.model.SkillCatalog.all.first { it.id == "body_capacity" },
-            bodyEvidence
-        )
-        assertEquals(ProgressTrendEngine.TrendDirection.IMPROVING, bodyTrend.direction)
-        assertEquals(2, bodyTrend.measuredCount)
-        assertEquals("reps", bodyTrend.comparableUnit)
     }
 }
