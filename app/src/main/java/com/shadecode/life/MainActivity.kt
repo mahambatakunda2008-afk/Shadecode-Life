@@ -30,7 +30,7 @@ import com.shadecode.life.assessment.BaselineScreen
 import com.shadecode.life.coach.CoachScreen
 import com.shadecode.life.core.engine.CoachEngine
 import com.shadecode.life.core.engine.DailyPlanner
-import com.shadecode.life.core.engine.DevelopmentEngine
+import com.shadecode.life.core.engine.DevelopmentDecisionEngine
 import com.shadecode.life.core.engine.SkillEngine
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentGoal
@@ -162,7 +162,7 @@ private fun LifeShell() {
             ActionAwareStartingPointScreen(
                 states = states,
                 nextFocus = session.nextFocus(),
-                nextAction = DevelopmentEngine.recommendNextAction(states),
+                nextAction = DevelopmentDecisionEngine.nextAction(evidence),
                 dailyPlan = dailyPlan,
                 evidence = evidence,
                 onStartAction = {
@@ -200,9 +200,11 @@ private fun LifeShell() {
             val progress = SkillEngine.progress(session.evidence())
             val nextSkill = SkillEngine.nextSkill(session.evidence())
             val nextProgress = progress.firstOrNull { it.skill.id == nextSkill?.id }
+            val goalProgress = activeGoal.value?.let { goal -> progress.firstOrNull { it.skill.id == goal.targetSkillId } }
             GoalScreen(
                 goal = activeGoal.value,
                 nextSkill = nextProgress,
+                goalProgress = goalProgress,
                 onCreateGoal = {
                     nextSkill?.let { skill ->
                         val goal = buildGoal(skill.id, skill.title, skill.domain)
@@ -249,7 +251,8 @@ private fun LifeShell() {
                     reset()
                 }) { Text("Reset") }
             },
-            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") }
+            }
         )
     }
 }

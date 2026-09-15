@@ -23,7 +23,8 @@ fun GoalScreen(
     goal: DevelopmentGoal?,
     nextSkill: SkillProgress?,
     onCreateGoal: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    goalProgress: SkillProgress? = null
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -45,21 +46,29 @@ fun GoalScreen(
                 }
             }
         } else {
+            val evidenceCount = goalProgress?.evidenceCount ?: 0
+            val stage = goalProgress?.stage
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Active goal", style = MaterialTheme.typography.labelLarge)
                     Text(goal.title, style = MaterialTheme.typography.titleLarge)
                     Text(goal.description)
                     Text("Skill: ${goal.targetSkillId}", style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        if (stage == SkillStage.DEMONSTRATED) "Goal capability demonstrated"
+                        else "${evidenceCount} evidence point${if (evidenceCount == 1) "" else "s"} collected",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
 
             goal.milestones.forEach { milestone ->
+                val completed = evidenceCount >= milestone.requiredEvidence
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(milestone.title, style = MaterialTheme.typography.titleMedium)
                         Text("Evidence required: ${milestone.requiredEvidence}")
-                        Text(if (milestone.completed) "Completed" else "In progress")
+                        Text(if (completed) "Completed" else "In progress")
                     }
                 }
             }

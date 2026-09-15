@@ -14,6 +14,7 @@ fun GoalScreen(
         goal = goal,
         nextSkill = nextSkill,
         onCreateGoal = onCreateGoal,
-        onBack = {}
+        onBack = {},
+        goalProgress = null
     )
 }

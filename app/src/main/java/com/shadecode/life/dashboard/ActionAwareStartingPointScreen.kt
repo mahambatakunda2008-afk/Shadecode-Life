@@ -16,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.shadecode.life.core.engine.DevelopmentDecisionEngine
 import com.shadecode.life.core.model.DailyPlan
+import com.shadecode.life.core.model.DataSufficiency
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentState
 import com.shadecode.life.core.model.Evidence
+import com.shadecode.life.core.model.PersonalModelSnapshot
 
 @Composable
 fun ActionAwareStartingPointScreen(
@@ -27,6 +29,7 @@ fun ActionAwareStartingPointScreen(
     nextAction: DevelopmentAction?,
     dailyPlan: DailyPlan?,
     evidence: List<Evidence> = emptyList(),
+    model: PersonalModelSnapshot? = null,
     onStartAction: (DevelopmentAction) -> Unit,
     onViewHistory: () -> Unit,
     onViewGoals: () -> Unit,
@@ -46,6 +49,8 @@ fun ActionAwareStartingPointScreen(
             "This is not a score for your worth. It is a map of what we know, what we do not know yet, and where to collect useful evidence next.",
             style = MaterialTheme.typography.bodyLarge
         )
+
+        model?.let { PersonalModelCard(it) }
 
         decision?.let { decisionValue ->
             NextCapabilityCard(
@@ -81,6 +86,33 @@ fun ActionAwareStartingPointScreen(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = onExport, modifier = Modifier.weight(1f)) { Text("Export") }
             Button(onClick = onReset, modifier = Modifier.weight(1f)) { Text("Reset") }
+        }
+    }
+}
+
+@Composable
+private fun PersonalModelCard(model: PersonalModelSnapshot) {
+    val label = when (model.dataSufficiency) {
+        DataSufficiency.EMPTY -> "No model yet"
+        DataSufficiency.SPARSE -> "Early model"
+        DataSufficiency.DEVELOPING -> "Developing model"
+        DataSufficiency.ESTABLISHED -> "Established model"
+    }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Personal model", style = MaterialTheme.typography.labelLarge)
+            Text(label, style = MaterialTheme.typography.titleLarge)
+            Text(
+                "${model.evidenceCount} evidence items · ${model.evidenceDays} day${if (model.evidenceDays == 1) "" else "s"} · ${model.domainsWithEvidence}/${model.domainCount} domains",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                "${model.startedSkillCount}/${model.skillCount} skills started · ${model.demonstratedSkillCount} demonstrated",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            if (model.evidenceCount == 0) {
+                Text("Collect real evidence before making stronger conclusions.", style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }
