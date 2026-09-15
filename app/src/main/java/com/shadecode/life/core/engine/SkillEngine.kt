@@ -6,59 +6,52 @@ import com.shadecode.life.core.model.SkillCatalog
 import com.shadecode.life.core.model.SkillProgress
 import com.shadecode.life.core.model.SkillStage
 import com.shadecode.life.core.model.SkillStatus
-import java.time.ZoneOffset
+import java.time.ZoneId
 
 /** Turns evaluated evidence into progressive, prerequisite-aware skill state. */
 object SkillEngine {
-    fun progress(evidence: List<Evidence>): List<SkillProgress> =
+    fun progress(evidence: List<Evidence>, zoneId: ZoneId = ZoneId.systemDefault()): List<SkillProgress> =
         SkillCatalog.all.map { skill ->
             val skillEvidence = evidenceFor(skill, evidence)
             val weightedEvidence = EvidenceEvaluator
                 .assessAll(skillEvidence, InstantProvider.now())
                 .sumOf { it.impact }
             val prerequisitesMet = skill.prerequisites.all { prerequisiteId ->
-                stageFor(SkillCatalog.all.firstOrNull { it.id == prerequisiteId }, evidence) >= SkillStage.FUNCTIONAL
+                stageFor(SkillCatalog.all.firstOrNull { it.id == prerequisiteId }, evidence, zoneId) >= SkillStage.FUNCTIONAL
             }
-            val stage = stageFor(skill, skillEvidence, weightedEvidence, prerequisitesMet)
+            val stage = stageFor(skill, skillEvidence, weightedEvidence, prerequisitesMet, zoneId)
             SkillProgress(
                 skill = skill,
                 evidenceCount = skillEvidence.size,
                 weightedEvidence = weightedEvidence,
-                distinctEvidenceDays = distinctDays(skillEvidence),
+                distinctEvidenceDays = distinctDays(skillEvidence, zoneId),
                 stage = stage,
                 status = statusFor(stage, prerequisitesMet),
                 prerequisitesMet = prerequisitesMet
             )
         }
 
-    fun nextSkill(evidence: List<Evidence>): Skill? =
-        progress(evidence)
+    fun nextSkill(evidence: List<Evidence>, zoneId: ZoneId = ZoneId.systemDefault()): Skill? =
+        progress(evidence, zoneId)
             .filter { it.status != SkillStatus.DEMONSTRATED && it.prerequisitesMet }
-            .minWithOrNull(
-                compareBy<SkillProgress>({ stageRank(it.stage) }, { it.weightedEvidence }, { foundationRank(it.skill) })
-            )
+            .minWithOrNull(compareBy<SkillProgress>({ stageRank(it.stage) }, { it.weightedEvidence }, { foundationRank(it.skill) }))
             ?.skill
 
-    fun stageFor(skill: Skill?, evidence: List<Evidence>): SkillStage {
+    fun stageFor(skill: Skill?, evidence: List<Evidence>, zoneId: ZoneId = ZoneId.systemDefault()): SkillStage {
         if (skill == null) return SkillStage.FOUNDATION
         val skillEvidence = evidenceFor(skill, evidence)
         val weightedEvidence = EvidenceEvaluator
             .assessAll(skillEvidence, InstantProvider.now())
             .sumOf { it.impact }
         val prerequisitesMet = skill.prerequisites.all { prerequisiteId ->
-            stageFor(SkillCatalog.all.firstOrNull { it.id == prerequisiteId }, evidence) >= SkillStage.FUNCTIONAL
+            stageFor(SkillCatalog.all.firstOrNull { it.id == prerequisiteId }, evidence, zoneId) >= SkillStage.FUNCTIONAL
         }
-        return stageFor(skill, skillEvidence, weightedEvidence, prerequisitesMet)
+        return stageFor(skill, skillEvidence, weightedEvidence, prerequisitesMet, zoneId)
     }
 
-    private fun stageFor(
-        skill: Skill,
-        evidence: List<Evidence>,
-        weightedEvidence: Double,
-        prerequisitesMet: Boolean = true
-    ): SkillStage {
+    private fun stageFor(skill: Skill, evidence: List<Evidence>, weightedEvidence: Double, prerequisitesMet: Boolean = true, zoneId: ZoneId): SkillStage {
         val thresholds = skill.stageThresholds
-        val days = distinctDays(evidence)
+        val days = distinctDays(evidence, zoneId)
         val rawStage = when {
             weightedEvidence >= thresholds.getOrElse(3) { 8 } && days >= 4 -> SkillStage.DEMONSTRATED
             weightedEvidence >= thresholds.getOrElse(2) { 5 } && days >= 3 -> SkillStage.RELIABLE
@@ -72,8 +65,8 @@ object SkillEngine {
     private fun evidenceFor(skill: Skill, evidence: List<Evidence>): List<Evidence> =
         evidence.filter { item -> item.skillId == skill.id || (item.skillId == null && item.domain == skill.domain) }
 
-    private fun distinctDays(evidence: List<Evidence>): Int =
-        evidence.map { it.recordedAt.atZone(ZoneOffset.UTC).toLocalDate() }.distinct().size
+    private fun distinctDays(evidence: List<Evidence>, zoneId: ZoneId): Int =
+        evidence.map { it.recordedAt.atZone(zoneId).toLocalDate() }.distinct().size
 
     private fun statusFor(stage: SkillStage, prerequisitesMet: Boolean): SkillStatus = when {
         stage == SkillStage.DEMONSTRATED && prerequisitesMet -> SkillStatus.DEMONSTRATED
@@ -92,7 +85,6 @@ object SkillEngine {
     private fun foundationRank(skill: Skill): Int = SkillCatalog.all.indexOf(skill)
 }
 
-/** Small indirection keeps evaluation deterministic in tests without coupling the engine to UI time. */
 private object InstantProvider {
     fun now() = java.time.Instant.now()
 }
