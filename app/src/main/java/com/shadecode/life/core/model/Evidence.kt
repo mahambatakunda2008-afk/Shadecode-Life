@@ -2,7 +2,6 @@ package com.shadecode.life.core.model
 
 import java.time.Instant
 
-/** Observable input used to understand development without relying on arbitrary self-ratings. */
 data class Evidence(
     val id: String,
     val domain: DevelopmentDomain,
@@ -12,7 +11,8 @@ data class Evidence(
     val unit: String? = null,
     val note: String? = null,
     val kind: EvidenceKind = EvidenceKind.OBSERVATION,
-    val recordedAt: Instant = Instant.now()
+    val recordedAt: Instant = Instant.now(),
+    val sourceActionId: String? = null
 )
 
 enum class EvidenceKind {
