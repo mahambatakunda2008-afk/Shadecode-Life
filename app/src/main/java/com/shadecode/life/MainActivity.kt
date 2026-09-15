@@ -31,6 +31,7 @@ import com.shadecode.life.coach.CoachScreen
 import com.shadecode.life.core.engine.CoachEngine
 import com.shadecode.life.core.engine.DailyPlanner
 import com.shadecode.life.core.engine.DevelopmentDecisionEngine
+import com.shadecode.life.core.engine.PersonalModelEngine
 import com.shadecode.life.core.engine.SkillEngine
 import com.shadecode.life.core.model.DevelopmentAction
 import com.shadecode.life.core.model.DevelopmentGoal
@@ -158,6 +159,7 @@ private fun LifeShell() {
         Page.START -> {
             val states = session.states()
             val evidence = session.evidence()
+            val model = PersonalModelEngine.snapshot(evidence, session.events())
             val dailyPlan = DailyPlanner.create(states)
             ActionAwareStartingPointScreen(
                 states = states,
@@ -165,6 +167,7 @@ private fun LifeShell() {
                 nextAction = DevelopmentDecisionEngine.nextAction(evidence),
                 dailyPlan = dailyPlan,
                 evidence = evidence,
+                model = model,
                 onStartAction = {
                     activeAction.value = it
                     page.value = Page.ACTION
