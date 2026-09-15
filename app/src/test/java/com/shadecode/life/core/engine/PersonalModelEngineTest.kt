@@ -8,6 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import java.time.Instant
+import java.time.ZoneId
 
 class PersonalModelEngineTest {
     @Test
@@ -30,7 +31,7 @@ class PersonalModelEngineTest {
             evidence("communication", DevelopmentDomain.COMMUNICATION, "2026-09-12T10:00:00Z")
         )
 
-        val snapshot = PersonalModelEngine.snapshot(evidence)
+        val snapshot = PersonalModelEngine.snapshot(evidence, zoneId = ZoneId.of("Africa/Harare"))
 
         assertEquals(DataSufficiency.ESTABLISHED, snapshot.dataSufficiency)
         assertEquals(4, snapshot.evidenceCount)
@@ -38,6 +39,18 @@ class PersonalModelEngineTest {
         assertEquals(4, snapshot.domainsWithEvidence)
         assert(snapshot.domainCount >= 4)
         assertEquals(snapshot.skillCount, snapshot.startedSkillCount + (snapshot.skillCount - snapshot.startedSkillCount))
+    }
+
+    @Test
+    fun evidenceNearMidnightUsesTheUsersZoneForDayCounting() {
+        val evidence = listOf(
+            evidence("late", DevelopmentDomain.BODY, "2026-09-10T21:30:00Z"),
+            evidence("early", DevelopmentDomain.BODY, "2026-09-11T00:30:00Z")
+        )
+
+        val snapshot = PersonalModelEngine.snapshot(evidence, zoneId = ZoneId.of("Africa/Harare"))
+
+        assertEquals(2, snapshot.evidenceDays)
     }
 
     private fun evidence(id: String, domain: DevelopmentDomain, recordedAt: String) = Evidence(
