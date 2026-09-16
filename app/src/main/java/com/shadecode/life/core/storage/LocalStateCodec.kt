@@ -8,7 +8,11 @@ import com.shadecode.life.core.model.EvidenceKind
 import java.time.Instant
 import java.util.Base64
 
+/** Version-tolerant codec for the local-first development state. */
 internal object LocalStateCodec {
+    private const val LEGACY_RECORD_FIELDS = 9
+    private const val RECORD_FIELDS = 10
+
     fun encodeRecords(items: List<Evidence>): String = items.joinToString("\n") { item ->
         listOf(
             item.id,
@@ -19,7 +23,8 @@ internal object LocalStateCodec {
             item.unit.orEmpty(),
             item.note.orEmpty(),
             item.kind.name,
-            item.recordedAt.toEpochMilli().toString()
+            item.recordedAt.toEpochMilli().toString(),
+            item.sourceActionId.orEmpty()
         ).joinToString("|") { encode(it) }
     }
 
@@ -28,7 +33,7 @@ internal object LocalStateCodec {
         .mapNotNull { line ->
             runCatching {
                 val parts = line.split('|').map(::decode)
-                require(parts.size == 9)
+                require(parts.size == LEGACY_RECORD_FIELDS || parts.size == RECORD_FIELDS)
                 Evidence(
                     id = parts[0],
                     domain = DevelopmentDomain.valueOf(parts[1]),
@@ -38,7 +43,8 @@ internal object LocalStateCodec {
                     unit = parts[5].takeIf(String::isNotBlank),
                     note = parts[6].takeIf(String::isNotBlank),
                     kind = EvidenceKind.valueOf(parts[7]),
-                    recordedAt = Instant.ofEpochMilli(parts[8].toLong())
+                    recordedAt = Instant.ofEpochMilli(parts[8].toLong()),
+                    sourceActionId = parts.getOrNull(9)?.takeIf(String::isNotBlank)
                 )
             }.getOrNull()
         }
