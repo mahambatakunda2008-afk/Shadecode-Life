@@ -3,6 +3,7 @@ package com.shadecode.life.core.engine
 import com.shadecode.life.core.model.DevelopmentDomain
 import com.shadecode.life.core.model.Evidence
 import com.shadecode.life.core.model.EvidenceKind
+import com.shadecode.life.core.model.SkillStage
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.test.Test
@@ -25,24 +26,25 @@ class SkillEngineTest {
         val progress = SkillEngine.progress(evidence, ZoneId.of("Africa/Harare"))
         val dependent = progress.single { it.skill.id == "clear_speaking" }
         assertTrue(!dependent.prerequisitesMet)
-        assertTrue(dependent.stage != com.shadecode.life.core.model.SkillStage.DEMONSTRATED)
+        assertTrue(dependent.stage != SkillStage.DEMONSTRATED)
     }
 
     @Test
     fun prerequisiteUnlocksDependentSkillAfterItReachesFunctionalStage() {
-        val evidence = mutableListOf<Evidence>()
-        for (index in 0 until 3) {
-            evidence += Evidence(
+        val evidence = (0 until 4).map { index ->
+            Evidence(
                 id = "knowledge-$index",
                 domain = DevelopmentDomain.CULTURE,
                 title = "Learn and explain idea $index",
                 skillId = "wider_knowledge",
                 kind = EvidenceKind.COMPLETED_TASK,
-                recordedAt = Instant.parse("2026-09-${10 + index}T10:00:00Z")
+                recordedAt = Instant.parse("2026-09-${13 + index}T10:00:00Z")
             )
         }
         val progress = SkillEngine.progress(evidence, ZoneId.of("Africa/Harare"))
+        val knowledge = progress.single { it.skill.id == "wider_knowledge" }
         val concept = progress.single { it.skill.id == "concept_explanation" }
+        assertTrue(knowledge.stage >= SkillStage.FUNCTIONAL)
         assertTrue(concept.prerequisitesMet)
     }
 
